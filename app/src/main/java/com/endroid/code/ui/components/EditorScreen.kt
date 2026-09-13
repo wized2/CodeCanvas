@@ -443,6 +443,14 @@ private fun EditorBody(
         val keyboard = LocalSoftwareKeyboardController.current
         val isEmpty = state.content.isEmpty()
 
+        // Empty document: focus once so typing can start without an extra tap on some devices
+        LaunchedEffect(isEmpty) {
+            if (isEmpty) {
+                focusRequester.requestFocus()
+                keyboard?.show()
+            }
+        }
+
         Box(
             editorScroll
                 .fillMaxSize()

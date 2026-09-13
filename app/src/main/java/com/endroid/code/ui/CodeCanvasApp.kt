@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.endroid.code.ThemeMode
@@ -33,6 +34,7 @@ fun CodeCanvasApp(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val activity = context as? ComponentActivity
+    val keyboard = LocalSoftwareKeyboardController.current
 
     var showDiscardDialog by remember { mutableStateOf(false) }
 
@@ -107,7 +109,10 @@ fun CodeCanvasApp(
                     onRedo = viewModel::redo,
                     onSearchVisible = viewModel::setSearchVisible,
                     onSearchQuery = viewModel::setSearchQuery,
-                    onOpenSettings = { viewModel.navigateTo(Screen.Settings) },
+                    onOpenSettings = {
+                        keyboard?.hide()
+                        viewModel.navigateTo(Screen.Settings)
+                    },
                     onClearStatus = viewModel::clearStatus,
                 )
             }
