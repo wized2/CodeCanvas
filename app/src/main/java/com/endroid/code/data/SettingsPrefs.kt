@@ -3,10 +3,7 @@ package com.endroid.code.data
 import android.content.Context
 import com.endroid.code.ThemeMode
 
-/**
- * Persists editor preferences across process death.
- * Uses SharedPreferences only (no extra dependency).
- */
+/** Persists editor preferences across process death (SharedPreferences only). */
 class SettingsPrefs(context: Context) {
 
     private val prefs = context.applicationContext
@@ -30,11 +27,26 @@ class SettingsPrefs(context: Context) {
         get() = prefs.getBoolean(KEY_WORD_WRAP, false)
         set(value) = prefs.edit().putBoolean(KEY_WORD_WRAP, value).apply()
 
+    var keepScreenOn: Boolean
+        get() = prefs.getBoolean(KEY_KEEP_SCREEN_ON, false)
+        set(value) = prefs.edit().putBoolean(KEY_KEEP_SCREEN_ON, value).apply()
+
+    var showEditorStats: Boolean
+        get() = prefs.getBoolean(KEY_SHOW_STATS, true)
+        set(value) = prefs.edit().putBoolean(KEY_SHOW_STATS, value).apply()
+
+    var focusEmptyEditor: Boolean
+        get() = prefs.getBoolean(KEY_FOCUS_EMPTY, true)
+        set(value) = prefs.edit().putBoolean(KEY_FOCUS_EMPTY, value).apply()
+
     companion object {
         private const val PREFS_NAME = "codecanvas_settings"
         private const val KEY_THEME = "theme_mode"
         private const val KEY_FONT_SIZE = "font_size"
         private const val KEY_LINE_NUMBERS = "show_line_numbers"
         private const val KEY_WORD_WRAP = "word_wrap"
+        private const val KEY_KEEP_SCREEN_ON = "keep_screen_on"
+        private const val KEY_SHOW_STATS = "show_editor_stats"
+        private const val KEY_FOCUS_EMPTY = "focus_empty_editor"
     }
 }

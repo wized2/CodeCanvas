@@ -1,5 +1,13 @@
 package com.endroid.code.ui.components
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +27,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +37,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -37,9 +47,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.endroid.code.BuildConfig
 import com.endroid.code.ThemeMode
 import com.endroid.code.editor.Language
 import com.endroid.code.viewmodel.EditorUiState
@@ -54,6 +66,9 @@ fun SettingsScreen(
     onFontSizeChange: (Float) -> Unit,
     onShowLineNumbersChange: (Boolean) -> Unit,
     onWordWrapChange: (Boolean) -> Unit,
+    onKeepScreenOnChange: (Boolean) -> Unit,
+    onShowEditorStatsChange: (Boolean) -> Unit,
+    onFocusEmptyEditorChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -71,10 +86,7 @@ fun SettingsScreen(
                             .padding(4.dp)
                             .semantics { contentDescription = "Back to editor" }
                     ) {
-                        Icon(
-                            Icons.Default.ArrowBack,
-                            contentDescription = null
-                        )
+                        Icon(Icons.Default.ArrowBack, contentDescription = null)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -114,19 +126,135 @@ fun SettingsScreen(
                     onCheckedChange = onWordWrapChange,
                     description = "Wrap long lines instead of horizontal scroll"
                 )
+                SettingsSwitch(
+                    title = "Status bar stats",
+                    checked = state.showEditorStats,
+                    onCheckedChange = onShowEditorStatsChange,
+                    description = "Show line and character counts under the editor"
+                )
             }
 
-            SettingsSection(title = "About") {
-                Text(
-                    text = "CodeCanvas 2.0",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
+            SettingsSection(title = "Behavior") {
+                SettingsSwitch(
+                    title = "Keep screen on",
+                    checked = state.keepScreenOn,
+                    onCheckedChange = onKeepScreenOnChange,
+                    description = "Prevent the screen from sleeping while editing"
                 )
-                Text(
-                    text = "Lightweight Material 3 code editor for Android.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                SettingsSwitch(
+                    title = "Focus empty editor",
+                    checked = state.focusEmptyEditor,
+                    onCheckedChange = onFocusEmptyEditorChange,
+                    description = "Open the keyboard automatically on a blank file"
                 )
+            }
+
+            AboutSection()
+        }
+    }
+}
+
+@Composable
+private fun AboutSection() {
+    var expanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val versionLabel = "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = "About",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
+        )
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer
+            ),
+            shape = MaterialTheme.shapes.large,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { expanded = !expanded }
+                        .padding(vertical = 12.dp)
+                        .semantics {
+                            contentDescription = if (expanded) "Collapse about" else "Expand about"
+                        },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(Modifier.weight(1f).padding(end = 8.dp)) {
+                        Text(
+                            text = "CodeCanvas",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = versionLabel,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Text(
+                        text = if (expanded) "Hide" else "Show",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                AnimatedVisibility(
+                    visible = expanded,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Column(
+                        Modifier.padding(bottom = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        Text(
+                            text = "A lightweight Material 3 code editor for Android. " +
+                                "Open and edit local files with syntax highlighting, " +
+                                "without accounts or network requirements.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "Features",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "• Syntax highlighting for common languages\n" +
+                                "• Line numbers, word wrap, undo / redo\n" +
+                                "• Storage Access Framework open & save\n" +
+                                "• Material 3 Auto / Light / Dark themes\n" +
+                                "• Small release size with R8 + resource shrinking",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "License: free to use and modify. Built with Kotlin & Jetpack Compose.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        TextButton(
+                            onClick = {
+                                val intent = Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("https://github.com/wized2/CodeCanvas")
+                                )
+                                context.startActivity(intent)
+                            },
+                            modifier = Modifier.semantics { contentDescription = "Open GitHub repository" }
+                        ) {
+                            Text("View on GitHub ↗")
+                        }
+                    }
+                }
             }
         }
     }
@@ -206,24 +334,21 @@ private fun ThemeDropdown(
             onValueChange = {},
             readOnly = true,
             label = { Text("Theme") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier
                 .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                 .fillMaxWidth()
                 .semantics { contentDescription = "Theme: $label" }
         )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             ThemeMode.entries.forEach { mode ->
-                val name = when (mode) {
+                val itemLabel = when (mode) {
                     ThemeMode.AUTO -> "Auto"
                     ThemeMode.LIGHT -> "Light"
                     ThemeMode.DARK -> "Dark"
                 }
                 DropdownMenuItem(
-                    text = { Text(name) },
+                    text = { Text(itemLabel) },
                     onClick = {
                         onSelected(mode)
                         expanded = false
@@ -250,16 +375,13 @@ private fun LanguageDropdown(
             onValueChange = {},
             readOnly = true,
             label = { Text("Language") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier
                 .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                 .fillMaxWidth()
                 .semantics { contentDescription = "Language: ${current.displayName}" }
         )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             Language.entries.forEach { lang ->
                 DropdownMenuItem(
                     text = { Text(lang.displayName) },
@@ -281,13 +403,13 @@ private fun FontSizeSlider(
     Column {
         Text(
             text = "Font size: ${value.toInt()} sp",
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyLarge
         )
         Slider(
             value = value,
             onValueChange = onValueChange,
-            valueRange = 10f..28f,
-            steps = 17,
+            valueRange = 12f..28f,
+            steps = 15,
             modifier = Modifier
                 .fillMaxWidth()
                 .semantics { contentDescription = "Font size ${value.toInt()} sp" }

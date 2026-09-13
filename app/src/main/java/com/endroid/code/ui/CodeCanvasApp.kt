@@ -13,8 +13,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import android.view.WindowManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -35,6 +37,18 @@ fun CodeCanvasApp(
     val context = LocalContext.current
     val activity = context as? ComponentActivity
     val keyboard = LocalSoftwareKeyboardController.current
+
+    DisposableEffect(uiState.keepScreenOn) {
+        val window = activity?.window
+        if (uiState.keepScreenOn) {
+            window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        onDispose {
+            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
 
     var showDiscardDialog by remember { mutableStateOf(false) }
 
@@ -125,6 +139,9 @@ fun CodeCanvasApp(
                     onFontSizeChange = viewModel::setFontSize,
                     onShowLineNumbersChange = viewModel::setShowLineNumbers,
                     onWordWrapChange = viewModel::setWordWrap,
+                    onKeepScreenOnChange = viewModel::setKeepScreenOn,
+                    onShowEditorStatsChange = viewModel::setShowEditorStats,
+                    onFocusEmptyEditorChange = viewModel::setFocusEmptyEditor,
                     modifier = Modifier
                         .fillMaxSize()
                         .semantics { contentDescription = "Settings" }

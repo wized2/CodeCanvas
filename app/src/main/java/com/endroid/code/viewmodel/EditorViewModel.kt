@@ -29,6 +29,9 @@ data class EditorUiState(
     val fontSize: Float = 16f,
     val showLineNumbers: Boolean = true,
     val wordWrap: Boolean = false,
+    val keepScreenOn: Boolean = false,
+    val showEditorStats: Boolean = true,
+    val focusEmptyEditor: Boolean = true,
     val themeMode: ThemeMode = ThemeMode.AUTO,
     val canUndo: Boolean = false,
     val canRedo: Boolean = false,
@@ -50,6 +53,9 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
             fontSize = prefs.fontSize,
             showLineNumbers = prefs.showLineNumbers,
             wordWrap = prefs.wordWrap,
+            keepScreenOn = prefs.keepScreenOn,
+            showEditorStats = prefs.showEditorStats,
+            focusEmptyEditor = prefs.focusEmptyEditor,
             themeMode = prefs.themeMode,
         )
     )
@@ -149,6 +155,9 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 fontSize = prefs.fontSize,
                 showLineNumbers = prefs.showLineNumbers,
                 wordWrap = prefs.wordWrap,
+                keepScreenOn = prefs.keepScreenOn,
+                showEditorStats = prefs.showEditorStats,
+                focusEmptyEditor = prefs.focusEmptyEditor,
                 themeMode = prefs.themeMode,
                 currentScreen = Screen.Editor
             )
@@ -278,6 +287,21 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     fun setWordWrap(enabled: Boolean) {
         prefs.wordWrap = enabled
         _uiState.update { it.copy(wordWrap = enabled) }
+    }
+
+    fun setKeepScreenOn(enabled: Boolean) {
+        prefs.keepScreenOn = enabled
+        _uiState.update { it.copy(keepScreenOn = enabled) }
+    }
+
+    fun setShowEditorStats(show: Boolean) {
+        prefs.showEditorStats = show
+        _uiState.update { it.copy(showEditorStats = show) }
+    }
+
+    fun setFocusEmptyEditor(enabled: Boolean) {
+        prefs.focusEmptyEditor = enabled
+        _uiState.update { it.copy(focusEmptyEditor = enabled) }
     }
 
     fun setThemeMode(mode: ThemeMode) {

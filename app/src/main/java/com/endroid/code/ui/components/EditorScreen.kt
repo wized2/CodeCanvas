@@ -290,7 +290,10 @@ fun EditorScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "${state.lineCount} lines  ·  ${state.charCount} chars",
+                        text = if (state.showEditorStats)
+                            "${state.lineCount} lines  ·  ${state.charCount} chars"
+                        else
+                            state.language.displayName,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -443,9 +446,9 @@ private fun EditorBody(
         val keyboard = LocalSoftwareKeyboardController.current
         val isEmpty = state.content.isEmpty()
 
-        // Empty document: focus once so typing can start without an extra tap on some devices
-        LaunchedEffect(isEmpty) {
-            if (isEmpty) {
+        // Empty document: optional auto-focus (Settings → Focus empty editor)
+        LaunchedEffect(isEmpty, state.focusEmptyEditor) {
+            if (isEmpty && state.focusEmptyEditor) {
                 focusRequester.requestFocus()
                 keyboard?.show()
             }
