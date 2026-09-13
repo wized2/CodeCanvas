@@ -64,7 +64,6 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -95,14 +94,6 @@ fun EditorScreen(
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var showLangMenu by remember { mutableStateOf(false) }
-    var textFieldValue by remember(state.content) {
-        mutableStateOf(TextFieldValue(state.content))
-    }
-
-    // Keep local TextFieldValue in sync when content changes externally (undo/redo/open)
-    if (textFieldValue.text != state.content) {
-        textFieldValue = TextFieldValue(state.content, textFieldValue.selection)
-    }
 
     val isDark = when (state.themeMode) {
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
@@ -356,19 +347,15 @@ fun EditorScreen(
 
                         // Transparent editable field on top for input
                         BasicTextField(
-                            value = textFieldValue,
-                            onValueChange = { newValue ->
-                                textFieldValue = newValue
-                                onContentChange(newValue.text)
-                            },
+                            value = state.content,
+                            onValueChange = onContentChange,
                             textStyle = TextStyle(
                                 fontFamily = FontFamily.Monospace,
                                 fontSize = state.fontSize.sp,
                                 lineHeight = (state.fontSize * 1.45f).sp,
-                                color = androidx.compose.ui.graphics.Color.Transparent // Hide, show highlight below
+                                color = androidx.compose.ui.graphics.Color.Transparent
                             ),
                             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                            softWrap = state.wordWrap,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .semantics {
