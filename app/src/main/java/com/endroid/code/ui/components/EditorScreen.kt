@@ -19,15 +19,16 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
@@ -44,6 +45,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +53,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -60,8 +63,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.endroid.code.R
 import com.endroid.code.ThemeMode
-import com.endroid.code.editor.Language
 import com.endroid.code.editor.SyntaxHighlighter
 import com.endroid.code.viewmodel.EditorUiState
 
@@ -139,13 +142,13 @@ fun EditorScreen(
                     onClick = onOpenFile,
                     modifier = Modifier.semantics { contentDescription = "Open file" }
                 ) {
-                    Icon(Icons.Default.FolderOpen, contentDescription = null)
+                    Icon(painterResource(R.drawable.ic_folder_open), contentDescription = null)
                 }
                 IconButton(
                     onClick = onSave,
                     modifier = Modifier.semantics { contentDescription = "Save" }
                 ) {
-                    Icon(Icons.Default.Save, contentDescription = null)
+                    Icon(painterResource(R.drawable.ic_save), contentDescription = null)
                 }
                 IconButton(
                     onClick = { onSearchVisible(!state.searchVisible) },
@@ -172,7 +175,7 @@ fun EditorScreen(
                     DropdownMenuItem(
                         text = { Text("Save As") },
                         onClick = { showOverflow = false; onSaveAs() },
-                        leadingIcon = { Icon(Icons.Default.Save, null) }
+                        leadingIcon = { Icon(painterResource(R.drawable.ic_save), null) }
                     )
                     HorizontalDivider()
                     DropdownMenuItem(
@@ -273,10 +276,19 @@ fun EditorScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
 
-                        // Editable transparent layer
+                        // Editable transparent layer (new BasicTextField API)
+                        val tfState = rememberTextFieldState(state.content)
+                        LaunchedEffect(state.content) {
+                            if (tfState.text.toString() != state.content) {
+                                tfState.setTextAndPlaceCursorAtEnd(state.content)
+                            }
+                        }
+                        LaunchedEffect(tfState.text) {
+                            val t = tfState.text.toString()
+                            if (t != state.content) onContentChange(t)
+                        }
                         BasicTextField(
-                            value = state.content,
-                            onValueChange = onContentChange,
+                            state = tfState,
                             textStyle = TextStyle(
                                 fontFamily = FontFamily.Monospace,
                                 fontSize = fontSizeSp,
@@ -284,7 +296,7 @@ fun EditorScreen(
                                 color = androidx.compose.ui.graphics.Color.Transparent
                             ),
                             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                            softWrap = state.wordWrap,
+                            lineLimits = TextFieldLineLimits.MultiLine(minHeightInLines = 1),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .semantics {
