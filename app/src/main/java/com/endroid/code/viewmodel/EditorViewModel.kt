@@ -1,11 +1,13 @@
 package com.endroid.code.viewmodel
 
+import android.app.Application
 import android.content.ContentResolver
 import android.net.Uri
 import android.provider.OpenableColumns
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.endroid.code.ThemeMode
+import com.endroid.code.data.SettingsPrefs
 import com.endroid.code.editor.Language
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,9 +41,18 @@ data class EditorUiState(
     val charCount: Int = 0
 )
 
-class EditorViewModel : ViewModel() {
+class EditorViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val _uiState = MutableStateFlow(EditorUiState())
+    private val prefs = SettingsPrefs(application)
+
+    private val _uiState = MutableStateFlow(
+        EditorUiState(
+            fontSize = prefs.fontSize,
+            showLineNumbers = prefs.showLineNumbers,
+            wordWrap = prefs.wordWrap,
+            themeMode = prefs.themeMode,
+        )
+    )
     val uiState: StateFlow<EditorUiState> = _uiState.asStateFlow()
 
     private val undoStack = ArrayDeque<String>(20)
@@ -135,10 +146,10 @@ class EditorViewModel : ViewModel() {
         redoStack.clear()
         _uiState.update {
             EditorUiState(
-                fontSize = it.fontSize,
-                showLineNumbers = it.showLineNumbers,
-                wordWrap = it.wordWrap,
-                themeMode = it.themeMode,
+                fontSize = prefs.fontSize,
+                showLineNumbers = prefs.showLineNumbers,
+                wordWrap = prefs.wordWrap,
+                themeMode = prefs.themeMode,
                 currentScreen = Screen.Editor
             )
         }
@@ -242,26 +253,35 @@ class EditorViewModel : ViewModel() {
     }
 
     fun setFontSize(size: Float) {
-        _uiState.update { it.copy(fontSize = size.coerceIn(12f, 28f)) }
+        val s = size.coerceIn(10f, 28f)
+        prefs.fontSize = s
+        _uiState.update { it.copy(fontSize = s) }
     }
 
     fun toggleLineNumbers() {
-        _uiState.update { it.copy(showLineNumbers = !it.showLineNumbers) }
+        val next = !_uiState.value.showLineNumbers
+        prefs.showLineNumbers = next
+        _uiState.update { it.copy(showLineNumbers = next) }
     }
 
     fun setShowLineNumbers(show: Boolean) {
+        prefs.showLineNumbers = show
         _uiState.update { it.copy(showLineNumbers = show) }
     }
 
     fun toggleWordWrap() {
-        _uiState.update { it.copy(wordWrap = !it.wordWrap) }
+        val next = !_uiState.value.wordWrap
+        prefs.wordWrap = next
+        _uiState.update { it.copy(wordWrap = next) }
     }
 
     fun setWordWrap(enabled: Boolean) {
+        prefs.wordWrap = enabled
         _uiState.update { it.copy(wordWrap = enabled) }
     }
 
     fun setThemeMode(mode: ThemeMode) {
+        prefs.themeMode = mode
         _uiState.update { it.copy(themeMode = mode) }
     }
 

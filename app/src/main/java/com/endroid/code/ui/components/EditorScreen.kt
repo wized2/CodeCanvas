@@ -60,6 +60,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -434,7 +439,22 @@ private fun EditorBody(
             )
             .padding(top = 8.dp, bottom = 8.dp, start = 10.dp, end = 12.dp)
 
-        Box(editorScroll) {
+        val focusRequester = remember { FocusRequester() }
+        val keyboard = LocalSoftwareKeyboardController.current
+        val isEmpty = state.content.isEmpty()
+
+        Box(
+            editorScroll
+                .fillMaxSize()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {
+                        focusRequester.requestFocus()
+                        keyboard?.show()
+                    },
+                )
+        ) {
             // Underlay must use the same wrap rules and style as the input so cursor lines match
             Text(
                 text = highlighted,
@@ -448,7 +468,11 @@ private fun EditorBody(
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 lineLimits = TextFieldLineLimits.MultiLine(minHeightInLines = 1),
                 modifier = Modifier
-                    .then(if (state.wordWrap) Modifier.fillMaxWidth() else Modifier)
+                    .focusRequester(focusRequester)
+                    .then(
+                        if (state.wordWrap || isEmpty) Modifier.fillMaxSize()
+                        else Modifier
+                    )
                     .semantics {
                         contentDescription =
                             "Code editor. Language ${state.language.displayName}"
