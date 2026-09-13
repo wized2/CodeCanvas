@@ -5,15 +5,17 @@
 ![Min API 26](https://img.shields.io/badge/minSdk-26-green)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.0-blue)
 ![Compose](https://img.shields.io/badge/Jetpack%20Compose-Material3-purple)
-![Version](https://img.shields.io/badge/version-1.1.0-blue)
+![Version](https://img.shields.io/badge/version-1.2.0-blue)
 
-## What’s new in 1.1.0
+## What’s new in 1.2.0
 
-- **Dedicated Settings screen** with proper switches, dropdowns and slider (no more cluttered overflow menu)
-- **Much better performance**: faster file open, no freezes when changing settings, efficient line numbers, capped highlighting for large files
-- **Smaller APK**: removed heavy `material-icons-extended` and navigation dependency
-- **Fixed status-bar gap** under the top bar
-- Cleaner, more polished UI
+- Faster file open (streaming + 1 MB soft limit) with full-screen loading overlay + message
+- Word wrap **off by default** (enable in Settings)
+- Larger 48dp touch targets on toolbar buttons
+- Improved text area padding and status bar
+- Dedicated Settings screen (switches, dropdowns, slider)
+- Smaller APK (core icons only, tighter ProGuard / packaging)
+- No freezes when changing settings; efficient line numbers & capped highlighting
 
 ## Features
 

@@ -26,7 +26,7 @@ data class EditorUiState(
     val language: Language = Language.PLAIN,
     val fontSize: Float = 16f,
     val showLineNumbers: Boolean = true,
-    val wordWrap: Boolean = true,
+    val wordWrap: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val canUndo: Boolean = false,
     val canRedo: Boolean = false,
@@ -146,28 +146,27 @@ class EditorViewModel : ViewModel() {
 
     fun openFile(uri: Uri, contentResolver: ContentResolver) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, currentScreen = Screen.Editor) }
+            val nameHint = getFileName(uri, contentResolver) ?: "file"
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    currentScreen = Screen.Editor,
+                    statusMessage = "Opening $nameHint…"
+                )
+            }
             try {
                 val name = getFileName(uri, contentResolver) ?: "Unknown"
+                // Read on IO; use larger buffer and avoid intermediate StringBuilder growth cost
                 val content = withContext(Dispatchers.IO) {
-                    contentResolver.openInputStream(uri)?.bufferedReader()?.use { reader ->
-                        // Cap very large files to keep UI responsive
-                        val sb = StringBuilder()
-                        var total = 0
-                        val limit = 512 * 1024 // 512 KB soft limit for responsiveness
-                        val buf = CharArray(8192)
-                        while (true) {
-                            val read = reader.read(buf)
-                            if (read <= 0) break
-                            total += read
-                            if (total > limit) {
-                                sb.append(buf, 0, read)
-                                sb.append("\n\n// … file truncated for performance (>) ${limit / 1024} KB) …")
-                                break
-                            }
-                            sb.append(buf, 0, read)
+                    contentResolver.openInputStream(uri)?.use { input ->
+                        val limit = 1_048_576 // 1 MB soft limit
+                        val bytes = input.readBytes()
+                        if (bytes.size > limit) {
+                            String(bytes, 0, limit, Charsets.UTF_8) +
+                                "\n\n// … truncated for performance (>1 MB) …"
+                        } else {
+                            String(bytes, Charsets.UTF_8)
                         }
-                        sb.toString()
                     } ?: ""
                 }
                 val lang = Language.fromFileName(name)

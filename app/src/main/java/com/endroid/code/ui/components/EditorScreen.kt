@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
@@ -129,7 +131,9 @@ fun EditorScreen(
             navigationIcon = {
                 IconButton(
                     onClick = onNewFile,
-                    modifier = Modifier.semantics {
+                    modifier = Modifier
+                        .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                        .semantics {
                         contentDescription = "New file"
                         role = Role.Button
                     }
@@ -140,31 +144,31 @@ fun EditorScreen(
             actions = {
                 IconButton(
                     onClick = onOpenFile,
-                    modifier = Modifier.semantics { contentDescription = "Open file" }
+                    modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp).semantics { contentDescription = "Open file" }
                 ) {
                     Icon(painterResource(R.drawable.ic_folder_open), contentDescription = null)
                 }
                 IconButton(
                     onClick = onSave,
-                    modifier = Modifier.semantics { contentDescription = "Save" }
+                    modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp).semantics { contentDescription = "Save" }
                 ) {
                     Icon(painterResource(R.drawable.ic_save), contentDescription = null)
                 }
                 IconButton(
                     onClick = { onSearchVisible(!state.searchVisible) },
-                    modifier = Modifier.semantics { contentDescription = "Search" }
+                    modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp).semantics { contentDescription = "Search" }
                 ) {
                     Icon(Icons.Default.Search, contentDescription = null)
                 }
                 IconButton(
                     onClick = onOpenSettings,
-                    modifier = Modifier.semantics { contentDescription = "Settings" }
+                    modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp).semantics { contentDescription = "Settings" }
                 ) {
                     Icon(Icons.Default.Settings, contentDescription = null)
                 }
                 IconButton(
                     onClick = { showOverflow = true },
-                    modifier = Modifier.semantics { contentDescription = "More" }
+                    modifier = Modifier.defaultMinSize(minWidth = 48.dp, minHeight = 48.dp).semantics { contentDescription = "More" }
                 ) {
                     Icon(Icons.Default.MoreVert, contentDescription = null)
                 }
@@ -225,7 +229,25 @@ fun EditorScreen(
                 .fillMaxWidth()
         ) {
             if (state.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background.copy(alpha = 0.92f)),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 3.dp,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                    Text(
+                        text = state.statusMessage ?: "Loading…",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                        modifier = Modifier.padding(top = 12.dp)
+                    )
+                }
             } else {
                 val scrollState = rememberScrollState()
                 val hScroll = rememberScrollState()
@@ -261,7 +283,7 @@ fun EditorScreen(
                                 if (!state.wordWrap) Modifier.horizontalScroll(hScroll)
                                 else Modifier
                             )
-                            .padding(horizontal = 12.dp, vertical = 12.dp)
+                            .padding(horizontal = 14.dp, vertical = 14.dp)
                     ) {
                         // Syntax-highlighted layer
                         Text(
@@ -314,7 +336,7 @@ fun EditorScreen(
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(26.dp)
+                .height(32.dp)
         ) {
             Row(
                 modifier = Modifier
