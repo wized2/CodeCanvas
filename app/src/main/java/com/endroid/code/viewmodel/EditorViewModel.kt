@@ -196,10 +196,13 @@ class EditorViewModel : ViewModel() {
         }
     }
 
+    fun needsSaveAs(): Boolean = _uiState.value.fileUri == null
+
     fun save(contentResolver: ContentResolver) {
         val uri = _uiState.value.fileUri
         if (uri == null) {
-            _uiState.update { it.copy(statusMessage = "Use Save As to choose location") }
+            // Caller should route to Save As for new files
+            _uiState.update { it.copy(statusMessage = "Choose where to save") }
             return
         }
         saveToUri(uri, contentResolver)

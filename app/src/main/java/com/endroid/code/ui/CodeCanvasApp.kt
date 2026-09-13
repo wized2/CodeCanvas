@@ -1,10 +1,18 @@
 package com.endroid.code.ui
 
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
@@ -24,6 +32,9 @@ fun CodeCanvasApp(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val activity = context as? ComponentActivity
+
+    var showDiscardDialog by remember { mutableStateOf(false) }
 
     val systemDark = isSystemInDarkTheme()
     val darkTheme = when (uiState.themeMode) {
@@ -32,8 +43,51 @@ fun CodeCanvasApp(
         ThemeMode.LIGHT -> false
     }
 
-    // Always Material 3 (Tokyo Night / light M3 schemes) — no separate dynamic palette
+    fun handleBack() {
+        when {
+            uiState.currentScreen == Screen.Settings -> {
+                viewModel.navigateTo(Screen.Editor)
+            }
+            uiState.isModified -> {
+                showDiscardDialog = true
+            }
+            else -> {
+                activity?.finish()
+            }
+        }
+    }
+
+    // System back button + predictive back / gesture
+    BackHandler {
+        handleBack()
+    }
+
     CodeCanvasTheme(darkTheme = darkTheme, dynamicColor = false) {
+        if (showDiscardDialog) {
+            AlertDialog(
+                onDismissRequest = { showDiscardDialog = false },
+                title = { Text("Unsaved changes") },
+                text = {
+                    Text("You have unsaved edits. Discard them and exit?")
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showDiscardDialog = false
+                            activity?.finish()
+                        }
+                    ) {
+                        Text("Discard")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDiscardDialog = false }) {
+                        Text("Keep editing")
+                    }
+                }
+            )
+        }
+
         when (uiState.currentScreen) {
             Screen.Editor -> {
                 EditorScreen(
@@ -41,7 +95,13 @@ fun CodeCanvasApp(
                     onContentChange = viewModel::updateContent,
                     onNewFile = viewModel::newFile,
                     onOpenFile = onOpenFile,
-                    onSave = { viewModel.save(context.contentResolver) },
+                    onSave = {
+                        if (viewModel.needsSaveAs()) {
+                            onSaveAs()
+                        } else {
+                            viewModel.save(context.contentResolver)
+                        }
+                    },
                     onSaveAs = onSaveAs,
                     onUndo = viewModel::undo,
                     onRedo = viewModel::redo,
