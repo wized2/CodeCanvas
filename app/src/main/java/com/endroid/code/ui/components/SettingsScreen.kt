@@ -123,7 +123,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = "Lightweight Material You code editor for Android.",
+                    text = "Lightweight Material 3 code editor for Android.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -192,10 +192,9 @@ private fun ThemeDropdown(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val label = when (current) {
-        ThemeMode.SYSTEM -> "System"
+        ThemeMode.AUTO -> "Auto"
         ThemeMode.LIGHT -> "Light"
         ThemeMode.DARK -> "Dark"
-        ThemeMode.DYNAMIC -> "Material You"
     }
 
     ExposedDropdownMenuBox(
@@ -219,10 +218,9 @@ private fun ThemeDropdown(
         ) {
             ThemeMode.entries.forEach { mode ->
                 val name = when (mode) {
-                    ThemeMode.SYSTEM -> "System"
+                    ThemeMode.AUTO -> "Auto"
                     ThemeMode.LIGHT -> "Light"
                     ThemeMode.DARK -> "Dark"
-                    ThemeMode.DYNAMIC -> "Material You"
                 }
                 DropdownMenuItem(
                     text = { Text(name) },

@@ -5,7 +5,7 @@
 ![Min API 26](https://img.shields.io/badge/minSdk-26-green)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.0-blue)
 ![Compose](https://img.shields.io/badge/Jetpack%20Compose-Material3-purple)
-![Version](https://img.shields.io/badge/version-2.0.0-blue)
+![Version](https://img.shields.io/badge/version-2.0.1-blue)
 
 ## What’s new in 2.0.0
 

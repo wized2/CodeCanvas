@@ -1,9 +1,9 @@
 package com.endroid.code
 
+/** App appearance: always Material 3 palettes. */
 enum class ThemeMode {
-    SYSTEM,
+    /** Follow system light/dark */
+    AUTO,
     LIGHT,
-    DARK,
-    /** Material You dynamic color from wallpaper (Android 12+) */
-    DYNAMIC
+    DARK
 }

@@ -27,7 +27,7 @@ data class EditorUiState(
     val fontSize: Float = 16f,
     val showLineNumbers: Boolean = true,
     val wordWrap: Boolean = false,
-    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val themeMode: ThemeMode = ThemeMode.AUTO,
     val canUndo: Boolean = false,
     val canRedo: Boolean = false,
     val searchQuery: String = "",

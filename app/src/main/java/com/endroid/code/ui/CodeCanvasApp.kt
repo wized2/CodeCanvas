@@ -27,14 +27,13 @@ fun CodeCanvasApp(
 
     val systemDark = isSystemInDarkTheme()
     val darkTheme = when (uiState.themeMode) {
-        ThemeMode.SYSTEM -> systemDark
+        ThemeMode.AUTO -> systemDark
         ThemeMode.DARK -> true
         ThemeMode.LIGHT -> false
-        ThemeMode.DYNAMIC -> systemDark
     }
-    val dynamicColor = uiState.themeMode == ThemeMode.DYNAMIC
 
-    CodeCanvasTheme(darkTheme = darkTheme, dynamicColor = dynamicColor) {
+    // Always Material 3 (Tokyo Night / light M3 schemes) — no separate dynamic palette
+    CodeCanvasTheme(darkTheme = darkTheme, dynamicColor = false) {
         when (uiState.currentScreen) {
             Screen.Editor -> {
                 EditorScreen(

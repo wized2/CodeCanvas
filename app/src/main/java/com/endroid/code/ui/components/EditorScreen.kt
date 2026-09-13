@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
@@ -36,6 +37,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -336,9 +338,34 @@ private fun EditorBody(
     onContentChange: (String) -> Unit
 ) {
     val fontSizeSp = state.fontSize.sp
-    val lineHeightSp = (state.fontSize * 1.45f).sp
+    val lineHeightSp = (state.fontSize * 1.5f).sp
     val hScroll = rememberScrollState()
     val vScroll = rememberScrollState()
+
+    val monoStyle = TextStyle(
+        fontFamily = FontFamily.Monospace,
+        fontSize = fontSizeSp,
+        lineHeight = lineHeightSp,
+        color = MaterialTheme.colorScheme.onSurface
+    )
+
+    // Cap gutter generation — huge files must not build multi-MB line-number strings
+    val maxGutterLines = 8_000
+    val lineNumbers by remember(state.lineCount, state.showLineNumbers) {
+        derivedStateOf {
+            if (!state.showLineNumbers || state.lineCount <= 0) return@derivedStateOf ""
+            val n = minOf(state.lineCount, maxGutterLines)
+            buildString(n * 4) {
+                for (i in 1..n) {
+                    append(i)
+                    if (i < n) append('\n')
+                }
+                if (state.lineCount > maxGutterLines) {
+                    append("\n…")
+                }
+            }
+        }
+    }
 
     val highlighted by remember(state.content, state.language, isDark) {
         derivedStateOf {
@@ -346,76 +373,81 @@ private fun EditorBody(
         }
     }
 
-    val lineNumbers by remember(state.lineCount, state.showLineNumbers) {
-        derivedStateOf {
-            if (!state.showLineNumbers) ""
-            else (1..state.lineCount).joinToString("\n")
-        }
-    }
-
-    val tfState = rememberTextFieldState(state.content)
+    val tfState = rememberTextFieldState()
+    // Sync external content → field only when it actually differs (open/undo/redo)
     LaunchedEffect(state.content) {
         if (tfState.text.toString() != state.content) {
             tfState.setTextAndPlaceCursorAtEnd(state.content)
         }
     }
+    // Field → view model (typing)
     LaunchedEffect(tfState.text) {
         val t = tfState.text.toString()
         if (t != state.content) onContentChange(t)
     }
 
-    val rowModifier = if (state.wordWrap) {
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(vScroll)
-            .padding(start = 4.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
-    } else {
-        Modifier
-            .fillMaxSize()
-            .horizontalScroll(hScroll)
-            .verticalScroll(vScroll)
-            .padding(start = 4.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
+    val gutterWidth = when {
+        state.lineCount >= 1000 -> 52.dp
+        state.lineCount >= 100 -> 40.dp
+        else -> 32.dp
     }
 
-    Row(modifier = rowModifier) {
-        if (state.showLineNumbers && lineNumbers.isNotEmpty()) {
-            Text(
-                text = lineNumbers,
-                style = TextStyle(
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = fontSizeSp,
-                    lineHeight = lineHeightSp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
-                ),
-                modifier = Modifier
-                    .padding(end = 10.dp)
-                    .widthIn(min = 28.dp)
-                    .semantics { contentDescription = "Line numbers" }
+    // Shared vertical scroll for gutter + editor; horizontal only on editor when wrap is off.
+    // Avoid nesting horizontalScroll+verticalScroll on the same parent (endless scroll / broken axes).
+    Row(
+        Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
+    ) {
+        if (state.showLineNumbers) {
+            Box(
+                Modifier
+                    .width(gutterWidth)
+                    .fillMaxHeight()
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .verticalScroll(vScroll)
+                    .padding(top = 8.dp, bottom = 8.dp, start = 6.dp, end = 6.dp)
+            ) {
+                Text(
+                    text = lineNumbers,
+                    style = monoStyle.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+                    ),
+                    softWrap = false,
+                    modifier = Modifier.semantics { contentDescription = "Line numbers" }
+                )
+            }
+            VerticalDivider(
+                thickness = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant
             )
         }
 
-        Box(Modifier.weight(1f, fill = false).widthIn(min = 200.dp)) {
+        val editorScroll = Modifier
+            .weight(1f)
+            .fillMaxHeight()
+            .verticalScroll(vScroll)
+            .then(
+                if (!state.wordWrap) Modifier.horizontalScroll(hScroll)
+                else Modifier
+            )
+            .padding(top = 8.dp, bottom = 8.dp, start = 10.dp, end = 12.dp)
+
+        Box(editorScroll) {
+            // Underlay must use the same wrap rules and style as the input so cursor lines match
             Text(
                 text = highlighted,
-                style = TextStyle(
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = fontSizeSp,
-                    lineHeight = lineHeightSp
-                ),
-                softWrap = state.wordWrap
+                style = monoStyle,
+                softWrap = state.wordWrap,
+                modifier = Modifier
             )
             BasicTextField(
                 state = tfState,
-                textStyle = TextStyle(
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = fontSizeSp,
-                    lineHeight = lineHeightSp,
-                    color = androidx.compose.ui.graphics.Color.Transparent
-                ),
+                textStyle = monoStyle.copy(color = androidx.compose.ui.graphics.Color.Transparent),
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 lineLimits = TextFieldLineLimits.MultiLine(minHeightInLines = 1),
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .then(if (state.wordWrap) Modifier.fillMaxWidth() else Modifier)
                     .semantics {
                         contentDescription =
                             "Code editor. Language ${state.language.displayName}"
