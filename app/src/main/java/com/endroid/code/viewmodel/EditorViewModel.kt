@@ -16,6 +16,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.ArrayDeque
 
+enum class Screen { Editor, Settings }
+
 data class EditorUiState(
     val content: String = "",
     val fileName: String = "",
@@ -31,7 +33,10 @@ data class EditorUiState(
     val searchQuery: String = "",
     val searchVisible: Boolean = false,
     val statusMessage: String? = null,
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val currentScreen: Screen = Screen.Editor,
+    val lineCount: Int = 1,
+    val charCount: Int = 0
 )
 
 class EditorViewModel : ViewModel() {
@@ -39,27 +44,44 @@ class EditorViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(EditorUiState())
     val uiState: StateFlow<EditorUiState> = _uiState.asStateFlow()
 
-    private val undoStack = ArrayDeque<String>()
-    private val redoStack = ArrayDeque<String>()
+    private val undoStack = ArrayDeque<String>(20)
+    private val redoStack = ArrayDeque<String>(20)
     private var isUndoRedo = false
-    private val maxHistory = 50
+    private val maxHistory = 20
+
+    fun navigateTo(screen: Screen) {
+        _uiState.update { it.copy(currentScreen = screen) }
+    }
 
     fun updateContent(newContent: String) {
         if (isUndoRedo) {
             isUndoRedo = false
-            _uiState.update { it.copy(content = newContent) }
+            val lines = newContent.count { it == '\n' } + 1
+            _uiState.update {
+                it.copy(
+                    content = newContent,
+                    lineCount = lines,
+                    charCount = newContent.length
+                )
+            }
             return
         }
         val current = _uiState.value.content
         if (current != newContent) {
-            pushUndo(current)
-            redoStack.clear()
+            // Only push undo for non-trivial changes (avoids spam on every keystroke for huge pastes)
+            if (kotlin.math.abs(current.length - newContent.length) > 1 || current.take(64) != newContent.take(64)) {
+                pushUndo(current)
+                redoStack.clear()
+            }
+            val lines = newContent.count { it == '\n' } + 1
             _uiState.update {
                 it.copy(
                     content = newContent,
                     isModified = true,
                     canUndo = undoStack.isNotEmpty(),
-                    canRedo = false
+                    canRedo = false,
+                    lineCount = lines,
+                    charCount = newContent.length
                 )
             }
         }
@@ -76,12 +98,15 @@ class EditorViewModel : ViewModel() {
         redoStack.addLast(current)
         val previous = undoStack.removeLast()
         isUndoRedo = true
+        val lines = previous.count { it == '\n' } + 1
         _uiState.update {
             it.copy(
                 content = previous,
                 isModified = true,
                 canUndo = undoStack.isNotEmpty(),
-                canRedo = true
+                canRedo = true,
+                lineCount = lines,
+                charCount = previous.length
             )
         }
     }
@@ -92,12 +117,15 @@ class EditorViewModel : ViewModel() {
         undoStack.addLast(current)
         val next = redoStack.removeLast()
         isUndoRedo = true
+        val lines = next.count { it == '\n' } + 1
         _uiState.update {
             it.copy(
                 content = next,
                 isModified = true,
                 canUndo = true,
-                canRedo = redoStack.isNotEmpty()
+                canRedo = redoStack.isNotEmpty(),
+                lineCount = lines,
+                charCount = next.length
             )
         }
     }
@@ -110,22 +138,42 @@ class EditorViewModel : ViewModel() {
                 fontSize = it.fontSize,
                 showLineNumbers = it.showLineNumbers,
                 wordWrap = it.wordWrap,
-                themeMode = it.themeMode
+                themeMode = it.themeMode,
+                currentScreen = Screen.Editor
             )
         }
     }
 
     fun openFile(uri: Uri, contentResolver: ContentResolver) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            _uiState.update { it.copy(isLoading = true, currentScreen = Screen.Editor) }
             try {
                 val name = getFileName(uri, contentResolver) ?: "Unknown"
                 val content = withContext(Dispatchers.IO) {
-                    contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } ?: ""
+                    contentResolver.openInputStream(uri)?.bufferedReader()?.use { reader ->
+                        // Cap very large files to keep UI responsive
+                        val sb = StringBuilder()
+                        var total = 0
+                        val limit = 512 * 1024 // 512 KB soft limit for responsiveness
+                        val buf = CharArray(8192)
+                        while (true) {
+                            val read = reader.read(buf)
+                            if (read <= 0) break
+                            total += read
+                            if (total > limit) {
+                                sb.append(buf, 0, read)
+                                sb.append("\n\n// … file truncated for performance (>) ${limit / 1024} KB) …")
+                                break
+                            }
+                            sb.append(buf, 0, read)
+                        }
+                        sb.toString()
+                    } ?: ""
                 }
                 val lang = Language.fromFileName(name)
                 undoStack.clear()
                 redoStack.clear()
+                val lines = content.count { it == '\n' } + 1
                 _uiState.update {
                     it.copy(
                         content = content,
@@ -136,7 +184,9 @@ class EditorViewModel : ViewModel() {
                         isLoading = false,
                         canUndo = false,
                         canRedo = false,
-                        statusMessage = "Opened $name"
+                        statusMessage = "Opened $name",
+                        lineCount = lines,
+                        charCount = content.length
                     )
                 }
             } catch (e: Exception) {
@@ -148,8 +198,7 @@ class EditorViewModel : ViewModel() {
     }
 
     fun save(contentResolver: ContentResolver) {
-        val state = _uiState.value
-        val uri = state.fileUri
+        val uri = _uiState.value.fileUri
         if (uri == null) {
             _uiState.update { it.copy(statusMessage = "Use Save As to choose location") }
             return
@@ -191,15 +240,23 @@ class EditorViewModel : ViewModel() {
     }
 
     fun setFontSize(size: Float) {
-        _uiState.update { it.copy(fontSize = size.coerceIn(10f, 32f)) }
+        _uiState.update { it.copy(fontSize = size.coerceIn(12f, 28f)) }
     }
 
     fun toggleLineNumbers() {
         _uiState.update { it.copy(showLineNumbers = !it.showLineNumbers) }
     }
 
+    fun setShowLineNumbers(show: Boolean) {
+        _uiState.update { it.copy(showLineNumbers = show) }
+    }
+
     fun toggleWordWrap() {
         _uiState.update { it.copy(wordWrap = !it.wordWrap) }
+    }
+
+    fun setWordWrap(enabled: Boolean) {
+        _uiState.update { it.copy(wordWrap = enabled) }
     }
 
     fun setThemeMode(mode: ThemeMode) {
@@ -207,7 +264,12 @@ class EditorViewModel : ViewModel() {
     }
 
     fun setSearchVisible(visible: Boolean) {
-        _uiState.update { it.copy(searchVisible = visible, searchQuery = if (!visible) "" else it.searchQuery) }
+        _uiState.update {
+            it.copy(
+                searchVisible = visible,
+                searchQuery = if (!visible) "" else it.searchQuery
+            )
+        }
     }
 
     fun setSearchQuery(query: String) {

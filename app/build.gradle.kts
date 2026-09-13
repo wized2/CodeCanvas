@@ -12,8 +12,8 @@ android {
         applicationId = "com.endroid.code"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -34,7 +34,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Use debug signing for both as requested (debug key)
+            // Use debug signing for both as requested
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -67,8 +67,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(libs.androidx.material.icons.extended)
-    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.material.icons.core)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

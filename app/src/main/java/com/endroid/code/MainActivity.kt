@@ -24,10 +24,12 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         uri?.let {
-            contentResolver.takePersistableUriPermission(
-                it,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            )
+            try {
+                contentResolver.takePersistableUriPermission(
+                    it,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+            } catch (_: SecurityException) { /* already granted or not persistable */ }
             viewModel.openFile(it, contentResolver)
         }
     }
@@ -36,10 +38,12 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.CreateDocument("text/*")
     ) { uri: Uri? ->
         uri?.let {
-            contentResolver.takePersistableUriPermission(
-                it,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            )
+            try {
+                contentResolver.takePersistableUriPermission(
+                    it,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+            } catch (_: SecurityException) { }
             viewModel.saveToUri(it, contentResolver)
         }
     }
@@ -49,7 +53,6 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
-        // Handle intent if opened from another app
         handleIncomingIntent(intent)
 
         setContent {
@@ -64,14 +67,16 @@ class MainActivity : ComponentActivity() {
                 CodeCanvasApp(
                     viewModel = viewModel,
                     onOpenFile = {
-                        openDocumentLauncher.launch(arrayOf(
-                            "text/*",
-                            "application/json",
-                            "application/xml",
-                            "application/javascript",
-                            "application/x-javascript",
-                            "*/*"
-                        ))
+                        openDocumentLauncher.launch(
+                            arrayOf(
+                                "text/*",
+                                "application/json",
+                                "application/xml",
+                                "application/javascript",
+                                "application/x-javascript",
+                                "*/*"
+                            )
+                        )
                     },
                     onSaveAs = {
                         val name = viewModel.uiState.value.fileName.ifBlank { "untitled.txt" }
@@ -95,9 +100,7 @@ class MainActivity : ComponentActivity() {
                     uri,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                 )
-            } catch (_: SecurityException) {
-                // Permission may already be granted or not persistable
-            }
+            } catch (_: SecurityException) { }
             viewModel.openFile(uri, contentResolver)
         }
     }
