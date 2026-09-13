@@ -13,7 +13,7 @@ import androidx.compose.ui.text.withStyle
  */
 object SyntaxHighlighter {
 
-    private const val MAX_HIGHLIGHT_CHARS = 120_000
+    private const val MAX_HIGHLIGHT_CHARS = 80_000
 
     data class ThemeColors(
         val keyword: Color,
@@ -101,6 +101,7 @@ object SyntaxHighlighter {
         isDark: Boolean
     ): AnnotatedString {
         if (text.isEmpty()) return AnnotatedString("")
+        if (language == Language.PLAIN) return AnnotatedString(text)
 
         // For large files skip expensive highlighting to keep UI smooth
         if (text.length > MAX_HIGHLIGHT_CHARS) {

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -56,20 +57,30 @@ fun SettingsScreen(
     modifier: Modifier = Modifier
 ) {
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .statusBarsPadding(),
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text("Settings", style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(
                         onClick = onBack,
-                        modifier = Modifier.semantics { contentDescription = "Back to editor" }
+                        modifier = Modifier
+                            .padding(4.dp)
+                            .semantics { contentDescription = "Back to editor" }
                     ) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = null)
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = null
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         }
@@ -82,49 +93,37 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Appearance
             SettingsSection(title = "Appearance") {
-                ThemeDropdown(
-                    current = state.themeMode,
-                    onSelected = onThemeModeChange
-                )
+                ThemeDropdown(current = state.themeMode, onSelected = onThemeModeChange)
                 Spacer(Modifier.height(8.dp))
-                FontSizeSlider(
-                    value = state.fontSize,
-                    onValueChange = onFontSizeChange
-                )
+                FontSizeSlider(value = state.fontSize, onValueChange = onFontSizeChange)
             }
 
-            // Editor
             SettingsSection(title = "Editor") {
-                LanguageDropdown(
-                    current = state.language,
-                    onSelected = onLanguageChange
-                )
+                LanguageDropdown(current = state.language, onSelected = onLanguageChange)
                 Spacer(Modifier.height(4.dp))
                 SettingsSwitch(
                     title = "Line numbers",
-                    subtitle = "Show gutter with line numbers",
                     checked = state.showLineNumbers,
-                    onCheckedChange = onShowLineNumbersChange
+                    onCheckedChange = onShowLineNumbersChange,
+                    description = "Show gutter with line numbers"
                 )
                 SettingsSwitch(
                     title = "Word wrap",
-                    subtitle = "Wrap long lines instead of horizontal scroll",
                     checked = state.wordWrap,
-                    onCheckedChange = onWordWrapChange
+                    onCheckedChange = onWordWrapChange,
+                    description = "Wrap long lines instead of horizontal scroll"
                 )
             }
 
-            // About
             SettingsSection(title = "About") {
                 Text(
-                    text = "CodeCanvas 1.1.0",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "CodeCanvas 2.0",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = "A lightweight, accessible code editor for Android.",
+                    text = "Lightweight Material You code editor for Android.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -138,20 +137,21 @@ private fun SettingsSection(
     title: String,
     content: @Composable () -> Unit
 ) {
-    Column {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(bottom = 8.dp)
+            modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
         )
         Card(
-            modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
-            )
+                containerColor = MaterialTheme.colorScheme.surfaceContainer
+            ),
+            shape = MaterialTheme.shapes.large,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 content()
             }
         }
@@ -161,30 +161,26 @@ private fun SettingsSection(
 @Composable
 private fun SettingsSwitch(
     title: String,
-    subtitle: String,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    description: String
 ) {
     Row(
-        modifier = Modifier
+        Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
-            .semantics { contentDescription = "$title, ${if (checked) "on" else "off"}" },
+            .semantics { contentDescription = "$title: ${if (checked) "on" else "off"}" },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+        Column(Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
             Text(
-                text = subtitle,
+                description,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange
-        )
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 
@@ -199,6 +195,7 @@ private fun ThemeDropdown(
         ThemeMode.SYSTEM -> "System"
         ThemeMode.LIGHT -> "Light"
         ThemeMode.DARK -> "Dark"
+        ThemeMode.DYNAMIC -> "Material You"
     }
 
     ExposedDropdownMenuBox(
@@ -225,6 +222,7 @@ private fun ThemeDropdown(
                     ThemeMode.SYSTEM -> "System"
                     ThemeMode.LIGHT -> "Light"
                     ThemeMode.DARK -> "Dark"
+                    ThemeMode.DYNAMIC -> "Material You"
                 }
                 DropdownMenuItem(
                     text = { Text(name) },
@@ -245,7 +243,6 @@ private fun LanguageDropdown(
     onSelected: (Language) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = it }
@@ -283,27 +280,19 @@ private fun FontSizeSlider(
     value: Float,
     onValueChange: (Float) -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics { contentDescription = "Font size ${value.toInt()} sp" }
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text("Font size", style = MaterialTheme.typography.bodyLarge)
-            Text(
-                "${value.toInt()} sp",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
+    Column {
+        Text(
+            text = "Font size: ${value.toInt()} sp",
+            style = MaterialTheme.typography.bodyMedium
+        )
         Slider(
             value = value,
             onValueChange = onValueChange,
-            valueRange = 12f..28f,
-            steps = 7
+            valueRange = 10f..28f,
+            steps = 17,
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = "Font size ${value.toInt()} sp" }
         )
     }
 }

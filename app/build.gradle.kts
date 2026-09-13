@@ -12,13 +12,14 @@ android {
         applicationId = "com.endroid.code"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.2.0"
+        versionCode = 4
+        versionName = "2.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
+        resourceConfigurations += listOf("en", "xxhdpi")
     }
 
     buildTypes {
@@ -34,7 +35,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Use debug signing for both as requested
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -57,6 +57,12 @@ android {
             excludes += "/META-INF/LICENSE*"
             excludes += "/META-INF/NOTICE*"
             excludes += "**/kotlin-tooling-metadata.json"
+            excludes += "DebugProbesKt.bin"
+            excludes += "META-INF/*.version"
+            excludes += "META-INF/*.kotlin_module"
+        }
+        jniLibs {
+            useLegacyPackaging = false
         }
     }
 }
