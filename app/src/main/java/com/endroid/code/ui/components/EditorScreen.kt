@@ -257,6 +257,36 @@ fun EditorScreen(
                                     context.startActivity(Intent.createChooser(send, "Share code"))
                                 }
                             )
+                            if (state.recentFiles.isNotEmpty()) {
+                                HorizontalDivider()
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            "Recent files",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    },
+                                    onClick = {},
+                                    enabled = false
+                                )
+                                state.recentFiles.forEach { (uri, name) ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                name,
+                                                maxLines = 1,
+                                                softWrap = false
+                                            )
+                                        },
+                                        onClick = {
+                                            menuExpanded = false
+                                            onOpenRecent(uri)
+                                        }
+                                    )
+                                }
+                            }
+                            HorizontalDivider()
                             DropdownMenuItem(
                                 text = { Text("Settings") },
                                 onClick = { menuExpanded = false; onOpenSettings() },
