@@ -141,7 +141,6 @@ fun CodeCanvasApp(
                     onReplaceFirst = viewModel::replaceFirst,
                     onReplaceAll = viewModel::replaceAll,
                     onCaseSensitiveSearchChange = viewModel::setCaseSensitiveSearch,
-                    onClearRecent = viewModel::clearRecentFiles,
                 )
             }
             Screen.Settings -> {
