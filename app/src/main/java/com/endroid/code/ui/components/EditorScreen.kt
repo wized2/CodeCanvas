@@ -305,6 +305,30 @@ fun EditorScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            if (state.recentFiles.isNotEmpty() && !state.searchVisible) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "Recent",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                    state.recentFiles.forEach { (uri, name) ->
+                        TextButton(
+                            onClick = { onOpenRecent(uri) },
+                            modifier = Modifier.defaultMinSize(minHeight = 36.dp)
+                        ) {
+                            Text(name, maxLines = 1, softWrap = false)
+                        }
+                    }
+                }
+            }
             AnimatedVisibility(
                 visible = state.searchVisible,
                 enter = fadeIn(),
