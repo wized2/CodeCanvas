@@ -133,6 +133,7 @@ fun CodeCanvasApp(
                     onFindPrevious = viewModel::findPreviousMatch,
                     onReplaceFirst = viewModel::replaceFirst,
                     onReplaceAll = viewModel::replaceAll,
+                    onCaseSensitiveSearchChange = viewModel::setCaseSensitiveSearch,
                 )
             }
             Screen.Settings -> {

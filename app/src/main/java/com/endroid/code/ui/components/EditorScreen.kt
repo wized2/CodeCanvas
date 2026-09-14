@@ -106,6 +106,7 @@ fun EditorScreen(
     onFindPrevious: () -> Unit,
     onReplaceFirst: (String) -> Unit,
     onReplaceAll: (String) -> Unit,
+    onCaseSensitiveSearchChange: (Boolean) -> Unit,
 ) {
     val isDark = isSystemInDarkTheme()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -330,6 +331,11 @@ fun EditorScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Row {
+                                TextButton(
+                                    onClick = { onCaseSensitiveSearchChange(!state.caseSensitiveSearch) }
+                                ) {
+                                    Text(if (state.caseSensitiveSearch) "Aa" else "aa")
+                                }
                                 TextButton(onClick = onFindPrevious, enabled = state.searchMatchCount > 0) {
                                     Text("Prev")
                                 }
