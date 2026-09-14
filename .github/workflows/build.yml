@@ -3,9 +3,13 @@ name: Build APKs
 on:
   push:
     branches: [ main, master ]
+    tags: ['v*']
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -26,15 +30,30 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+
+      - name: Accept licenses
+        run: yes | sdkmanager --licenses || true
+
+      - name: Ensure debug keystore
+        run: |
+          mkdir -p "$HOME/.android"
+          if [ ! -f "$HOME/.android/debug.keystore" ]; then
+            keytool -genkey -keystore "$HOME/.android/debug.keystore" \
+              -storepass android -alias androiddebugkey -keypass android \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US" -storetype PKCS12
+          fi
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew assembleDebug --stacktrace --no-daemon
 
-      - name: Build Release APK (minified + resource shrinking, debug-signed)
-        run: ./gradlew assembleRelease --stacktrace
+      - name: Build Release APK
+        run: ./gradlew assembleRelease --stacktrace --no-daemon
 
       - name: List APKs
         run: |
@@ -58,3 +77,34 @@ jobs:
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Prepare release assets
+        if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
+        run: |
+          mkdir -p release-assets
+          cp app/build/outputs/apk/release/*.apk release-assets/CodeCanvas-release.apk
+          cp app/build/outputs/apk/debug/*.apk release-assets/CodeCanvas-debug.apk
+
+      - name: GitHub Release (tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-assets/CodeCanvas-release.apk
+            release-assets/CodeCanvas-debug.apk
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: GitHub Release (main)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v2.4.2
+          name: CodeCanvas v2.4.2
+          files: |
+            release-assets/CodeCanvas-release.apk
+            release-assets/CodeCanvas-debug.apk
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
