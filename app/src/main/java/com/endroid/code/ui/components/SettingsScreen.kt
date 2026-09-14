@@ -33,6 +33,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -73,6 +74,25 @@ fun SettingsScreen(
     onClearRecent: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var confirmClearRecent by remember { mutableStateOf(false) }
+
+    if (confirmClearRecent) {
+        AlertDialog(
+            onDismissRequest = { confirmClearRecent = false },
+            title = { Text("Clear recent files?") },
+            text = { Text("This removes the list of recently opened documents. Files on disk are not deleted.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    onClearRecent()
+                    confirmClearRecent = false
+                }) { Text("Clear") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmClearRecent = false }) { Text("Cancel") }
+            }
+        )
+    }
+
     Scaffold(
         modifier = modifier
             .fillMaxSize()
@@ -164,7 +184,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 TextButton(
-                    onClick = onClearRecent,
+                    onClick = { confirmClearRecent = true },
                     modifier = Modifier.semantics { contentDescription = "Clear recent files" }
                 ) {
                     Text("Clear recent files")
