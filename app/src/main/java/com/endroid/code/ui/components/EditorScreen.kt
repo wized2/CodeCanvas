@@ -51,6 +51,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import android.content.Intent
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextRange
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -95,10 +100,15 @@ fun EditorScreen(
     onSearchQuery: (String) -> Unit,
     onOpenSettings: () -> Unit,
     onClearStatus: () -> Unit,
+    onGoToLine: (Int) -> Unit,
+    onGoToLineConsumed: () -> Unit,
 ) {
     val isDark = isSystemInDarkTheme()
     val snackbarHostState = remember { SnackbarHostState() }
     var menuExpanded by remember { mutableStateOf(false) }
+    var showGoToLine by remember { mutableStateOf(false) }
+    var goToLineText by remember { mutableStateOf("") }
+    val context = LocalContext.current
 
     LaunchedEffect(state.statusMessage) {
         val msg = state.statusMessage
@@ -106,6 +116,34 @@ fun EditorScreen(
             snackbarHostState.showSnackbar(msg)
             onClearStatus()
         }
+    }
+
+
+    if (showGoToLine) {
+        AlertDialog(
+            onDismissRequest = { showGoToLine = false },
+            title = { Text("Go to line") },
+            text = {
+                OutlinedTextField(
+                    value = goToLineText,
+                    onValueChange = { goToLineText = it.filter { ch -> ch.isDigit() }.take(7) },
+                    label = { Text("Line number") },
+                    singleLine = true,
+                    modifier = Modifier.semantics { contentDescription = "Line number" }
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        goToLineText.toIntOrNull()?.let { onGoToLine(it) }
+                        showGoToLine = false
+                    }
+                ) { Text("Go") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showGoToLine = false }) { Text("Cancel") }
+            }
+        )
     }
 
     Scaffold(
@@ -177,6 +215,26 @@ fun EditorScreen(
                                 onClick = { menuExpanded = false; onRedo() }
                             )
                             HorizontalDivider()
+                            DropdownMenuItem(
+                                text = { Text("Go to line") },
+                                onClick = {
+                                    menuExpanded = false
+                                    goToLineText = ""
+                                    showGoToLine = true
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Share") },
+                                onClick = {
+                                    menuExpanded = false
+                                    val send = Intent(Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(Intent.EXTRA_TEXT, state.content)
+                                        putExtra(Intent.EXTRA_SUBJECT, state.fileName.ifBlank { "CodeCanvas" })
+                                    }
+                                    context.startActivity(Intent.createChooser(send, "Share code"))
+                                }
+                            )
                             DropdownMenuItem(
                                 text = { Text("Settings") },
                                 onClick = { menuExpanded = false; onOpenSettings() },
@@ -344,7 +402,8 @@ private fun ToolbarIcon(
 private fun EditorBody(
     state: EditorUiState,
     isDark: Boolean,
-    onContentChange: (String) -> Unit
+    onContentChange: (String) -> Unit,
+    onGoToLineConsumed: () -> Unit
 ) {
     val fontSizeSp = state.fontSize.sp
     val lineHeightSp = (state.fontSize * 1.5f).sp
@@ -393,6 +452,22 @@ private fun EditorBody(
     LaunchedEffect(tfState.text) {
         val t = tfState.text.toString()
         if (t != state.content) onContentChange(t)
+    }
+
+    LaunchedEffect(state.goToLine) {
+        val line = state.goToLine ?: return@LaunchedEffect
+        val text = tfState.text.toString()
+        val lines = text.split('\n')
+        val target = (line - 1).coerceIn(0, (lines.size - 1).coerceAtLeast(0))
+        var offset = 0
+        for (i in 0 until target) {
+            offset += lines[i].length + 1
+        }
+        offset = offset.coerceIn(0, text.length)
+        tfState.edit {
+            selection = TextRange(offset)
+        }
+        onGoToLineConsumed()
     }
 
     val gutterWidth = when {
@@ -467,6 +542,16 @@ private fun EditorBody(
                 )
         ) {
             // Underlay must use the same wrap rules and style as the input so cursor lines match
+            if (isEmpty) {
+                Text(
+                    text = "Start typing, or open a file.\nTip: overflow menu → Go to line / Share",
+                    style = monoStyle.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+                    ),
+                    softWrap = true,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
             Text(
                 text = highlighted,
                 style = monoStyle,

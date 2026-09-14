@@ -32,6 +32,7 @@ data class EditorUiState(
     val keepScreenOn: Boolean = false,
     val showEditorStats: Boolean = true,
     val focusEmptyEditor: Boolean = true,
+    val goToLine: Int? = null,
     val themeMode: ThemeMode = ThemeMode.AUTO,
     val canUndo: Boolean = false,
     val canRedo: Boolean = false,
@@ -302,6 +303,14 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     fun setFocusEmptyEditor(enabled: Boolean) {
         prefs.focusEmptyEditor = enabled
         _uiState.update { it.copy(focusEmptyEditor = enabled) }
+    }
+
+    fun requestGoToLine(line: Int) {
+        _uiState.update { it.copy(goToLine = line.coerceAtLeast(1)) }
+    }
+
+    fun clearGoToLine() {
+        _uiState.update { it.copy(goToLine = null) }
     }
 
     fun setThemeMode(mode: ThemeMode) {

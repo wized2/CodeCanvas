@@ -128,6 +128,8 @@ fun CodeCanvasApp(
                         viewModel.navigateTo(Screen.Settings)
                     },
                     onClearStatus = viewModel::clearStatus,
+                    onGoToLine = viewModel::requestGoToLine,
+                    onGoToLineConsumed = viewModel::clearGoToLine,
                 )
             }
             Screen.Settings -> {
