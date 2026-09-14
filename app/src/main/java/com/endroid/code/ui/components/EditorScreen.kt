@@ -297,7 +297,8 @@ fun EditorScreen(
                 EditorBody(
                     state = state,
                     isDark = isDark,
-                    onContentChange = onContentChange
+                    onContentChange = onContentChange,
+                    onGoToLineConsumed = onGoToLineConsumed
                 )
 
                 if (state.isLoading) {
