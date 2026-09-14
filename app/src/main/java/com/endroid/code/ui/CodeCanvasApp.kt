@@ -16,7 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import android.view.WindowManager
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -38,16 +38,15 @@ fun CodeCanvasApp(
     val activity = context as? ComponentActivity
     val keyboard = LocalSoftwareKeyboardController.current
 
-    DisposableEffect(uiState.keepScreenOn) {
-        val window = activity?.window
-        if (uiState.keepScreenOn) {
-            window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        } else {
-            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        }
-        onDispose {
-            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        }
+    val view = LocalView.current
+    // Keep awake only on the editor with the preference enabled.
+    // Leaving Settings, turning the toggle off, or disposing the view clears it.
+    val wantKeepScreenOn =
+        uiState.keepScreenOn && uiState.currentScreen == Screen.Editor
+
+    DisposableEffect(wantKeepScreenOn) {
+        view.keepScreenOn = wantKeepScreenOn
+        onDispose { view.keepScreenOn = false }
     }
 
     var showDiscardDialog by remember { mutableStateOf(false) }
@@ -148,6 +147,7 @@ fun CodeCanvasApp(
                     onKeepScreenOnChange = viewModel::setKeepScreenOn,
                     onShowEditorStatsChange = viewModel::setShowEditorStats,
                     onFocusEmptyEditorChange = viewModel::setFocusEmptyEditor,
+                    onCaseSensitiveSearchChange = viewModel::setCaseSensitiveSearch,
                     modifier = Modifier
                         .fillMaxSize()
                         .semantics { contentDescription = "Settings" }

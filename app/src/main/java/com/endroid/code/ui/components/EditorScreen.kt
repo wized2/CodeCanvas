@@ -411,10 +411,15 @@ fun EditorScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = if (state.showEditorStats)
-                            "${state.lineCount} lines  ·  ${state.charCount} chars"
-                        else
-                            state.language.displayName,
+                        text = buildString {
+                            if (state.showEditorStats) {
+                                append("${state.lineCount} lines  ·  ${state.charCount} chars")
+                            } else {
+                                append(state.language.displayName)
+                            }
+                            if (state.keepScreenOn) append("  ·  Screen on")
+                            if (state.isModified) append("  ·  Modified")
+                        },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

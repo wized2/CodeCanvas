@@ -39,6 +39,10 @@ class SettingsPrefs(context: Context) {
         get() = prefs.getBoolean(KEY_FOCUS_EMPTY, true)
         set(value) = prefs.edit().putBoolean(KEY_FOCUS_EMPTY, value).apply()
 
+    var caseSensitiveSearch: Boolean
+        get() = prefs.getBoolean(KEY_CASE_SENSITIVE, false)
+        set(value) = prefs.edit().putBoolean(KEY_CASE_SENSITIVE, value).apply()
+
     companion object {
         private const val PREFS_NAME = "codecanvas_settings"
         private const val KEY_THEME = "theme_mode"
@@ -48,5 +52,6 @@ class SettingsPrefs(context: Context) {
         private const val KEY_KEEP_SCREEN_ON = "keep_screen_on"
         private const val KEY_SHOW_STATS = "show_editor_stats"
         private const val KEY_FOCUS_EMPTY = "focus_empty_editor"
+        private const val KEY_CASE_SENSITIVE = "case_sensitive_search"
     }
 }

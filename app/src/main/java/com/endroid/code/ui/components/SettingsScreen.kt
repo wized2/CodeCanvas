@@ -69,6 +69,7 @@ fun SettingsScreen(
     onKeepScreenOnChange: (Boolean) -> Unit,
     onShowEditorStatsChange: (Boolean) -> Unit,
     onFocusEmptyEditorChange: (Boolean) -> Unit,
+    onCaseSensitiveSearchChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -132,6 +133,12 @@ fun SettingsScreen(
                     onCheckedChange = onShowEditorStatsChange,
                     description = "Show line and character counts under the editor"
                 )
+                SettingsSwitch(
+                    title = "Case-sensitive search",
+                    checked = state.caseSensitiveSearch,
+                    onCheckedChange = onCaseSensitiveSearchChange,
+                    description = "Match exact letter case in Find & Replace"
+                )
             }
 
             SettingsSection(title = "Behavior") {
@@ -139,7 +146,7 @@ fun SettingsScreen(
                     title = "Keep screen on",
                     checked = state.keepScreenOn,
                     onCheckedChange = onKeepScreenOnChange,
-                    description = "Prevent the screen from sleeping while editing"
+                    description = "Only while editing (clears in Settings, when paused, or when turned off)"
                 )
                 SettingsSwitch(
                     title = "Focus empty editor",

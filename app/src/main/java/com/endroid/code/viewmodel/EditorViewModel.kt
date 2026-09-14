@@ -32,6 +32,7 @@ data class EditorUiState(
     val keepScreenOn: Boolean = false,
     val showEditorStats: Boolean = true,
     val focusEmptyEditor: Boolean = true,
+    val caseSensitiveSearch: Boolean = false,
     val goToLine: Int? = null,
     val themeMode: ThemeMode = ThemeMode.AUTO,
     val canUndo: Boolean = false,
@@ -59,6 +60,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
             keepScreenOn = prefs.keepScreenOn,
             showEditorStats = prefs.showEditorStats,
             focusEmptyEditor = prefs.focusEmptyEditor,
+            caseSensitiveSearch = prefs.caseSensitiveSearch,
             themeMode = prefs.themeMode,
         )
     )
@@ -161,6 +163,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 keepScreenOn = prefs.keepScreenOn,
                 showEditorStats = prefs.showEditorStats,
                 focusEmptyEditor = prefs.focusEmptyEditor,
+                caseSensitiveSearch = prefs.caseSensitiveSearch,
                 themeMode = prefs.themeMode,
                 currentScreen = Screen.Editor
             )
@@ -307,6 +310,18 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         _uiState.update { it.copy(focusEmptyEditor = enabled) }
     }
 
+    fun setCaseSensitiveSearch(enabled: Boolean) {
+        prefs.caseSensitiveSearch = enabled
+        _uiState.update {
+            val count = countMatches(it.content, it.searchQuery, enabled)
+            it.copy(
+                caseSensitiveSearch = enabled,
+                searchMatchCount = count,
+                searchMatchIndex = if (count == 0) 0 else it.searchMatchIndex.coerceIn(0, count - 1)
+            )
+        }
+    }
+
     fun requestGoToLine(line: Int) {
         _uiState.update { it.copy(goToLine = line.coerceAtLeast(1)) }
     }
@@ -326,14 +341,14 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 searchVisible = visible,
                 searchQuery = if (!visible) "" else it.searchQuery,
                 searchMatchIndex = 0,
-                searchMatchCount = if (!visible) 0 else countMatches(it.content, it.searchQuery)
+                searchMatchCount = if (!visible) 0 else countMatches(it.content, it.searchQuery, it.caseSensitiveSearch)
             )
         }
     }
 
     fun setSearchQuery(query: String) {
         _uiState.update {
-            val count = countMatches(it.content, query)
+            val count = countMatches(it.content, query, it.caseSensitiveSearch)
             it.copy(
                 searchQuery = query,
                 searchMatchCount = count,
@@ -346,7 +361,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         _uiState.update {
             if (it.searchMatchCount <= 0) return@update it
             val next = (it.searchMatchIndex + 1) % it.searchMatchCount
-            it.copy(searchMatchIndex = next, goToLine = lineOfMatch(it.content, it.searchQuery, next))
+            it.copy(searchMatchIndex = next, goToLine = lineOfMatch(it.content, it.searchQuery, next, it.caseSensitiveSearch))
         }
     }
 
@@ -354,7 +369,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         _uiState.update {
             if (it.searchMatchCount <= 0) return@update it
             val prev = (it.searchMatchIndex - 1 + it.searchMatchCount) % it.searchMatchCount
-            it.copy(searchMatchIndex = prev, goToLine = lineOfMatch(it.content, it.searchQuery, prev))
+            it.copy(searchMatchIndex = prev, goToLine = lineOfMatch(it.content, it.searchQuery, prev, it.caseSensitiveSearch))
         }
     }
 
@@ -362,7 +377,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         val s = _uiState.value
         val q = s.searchQuery
         if (q.isEmpty()) return
-        val idx = s.content.indexOf(q, ignoreCase = true)
+        val idx = s.content.indexOf(q, ignoreCase = !s.caseSensitiveSearch)
         if (idx < 0) return
         val newContent = s.content.substring(0, idx) + replacement + s.content.substring(idx + q.length)
         updateContent(newContent)
@@ -373,17 +388,17 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         val s = _uiState.value
         val q = s.searchQuery
         if (q.isEmpty()) return
-        val regex = Regex(Regex.escape(q), RegexOption.IGNORE_CASE)
+        val regex = if (s.caseSensitiveSearch) Regex(Regex.escape(q)) else Regex(Regex.escape(q), RegexOption.IGNORE_CASE)
         updateContent(regex.replace(s.content, replacement))
         setSearchQuery(q)
     }
 
-    private fun countMatches(content: String, query: String): Int {
+    private fun countMatches(content: String, query: String, caseSensitive: Boolean): Int {
         if (query.isEmpty()) return 0
         var count = 0
         var start = 0
-        val q = query.lowercase()
-        val c = content.lowercase()
+        val q = if (caseSensitive) query else query.lowercase()
+        val c = if (caseSensitive) content else content.lowercase()
         while (true) {
             val i = c.indexOf(q, start)
             if (i < 0) break
@@ -393,12 +408,17 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         return count
     }
 
-    private fun lineOfMatch(content: String, query: String, matchIndex: Int): Int {
+    private fun lineOfMatch(
+        content: String,
+        query: String,
+        matchIndex: Int,
+        caseSensitive: Boolean
+    ): Int {
         if (query.isEmpty() || matchIndex < 0) return 1
         var count = 0
         var start = 0
-        val q = query.lowercase()
-        val c = content.lowercase()
+        val q = if (caseSensitive) query else query.lowercase()
+        val c = if (caseSensitive) content else content.lowercase()
         while (true) {
             val i = c.indexOf(q, start)
             if (i < 0) return 1
