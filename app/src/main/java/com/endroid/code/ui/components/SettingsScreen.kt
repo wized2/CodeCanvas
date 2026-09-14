@@ -229,7 +229,7 @@ private fun AboutSection() {
                         )
                         Text(
                             text = "• Syntax highlighting for common languages\n" +
-                                "• Line numbers, word wrap, undo / redo\n" +
+                                "• Line numbers, word wrap, find & replace, undo / redo\n" +
                                 "• Storage Access Framework open & save\n" +
                                 "• Material 3 Auto / Light / Dark themes\n" +
                                 "• Small release size with R8 + resource shrinking",

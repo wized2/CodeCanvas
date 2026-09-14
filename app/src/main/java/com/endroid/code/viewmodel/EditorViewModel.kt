@@ -38,6 +38,8 @@ data class EditorUiState(
     val canRedo: Boolean = false,
     val searchQuery: String = "",
     val searchVisible: Boolean = false,
+    val searchMatchIndex: Int = 0,
+    val searchMatchCount: Int = 0,
     val statusMessage: String? = null,
     val isLoading: Boolean = false,
     val currentScreen: Screen = Screen.Editor,
@@ -322,13 +324,90 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         _uiState.update {
             it.copy(
                 searchVisible = visible,
-                searchQuery = if (!visible) "" else it.searchQuery
+                searchQuery = if (!visible) "" else it.searchQuery,
+                searchMatchIndex = 0,
+                searchMatchCount = if (!visible) 0 else countMatches(it.content, it.searchQuery)
             )
         }
     }
 
     fun setSearchQuery(query: String) {
-        _uiState.update { it.copy(searchQuery = query) }
+        _uiState.update {
+            val count = countMatches(it.content, query)
+            it.copy(
+                searchQuery = query,
+                searchMatchCount = count,
+                searchMatchIndex = if (count == 0) 0 else it.searchMatchIndex.coerceIn(0, count - 1)
+            )
+        }
+    }
+
+    fun findNextMatch() {
+        _uiState.update {
+            if (it.searchMatchCount <= 0) return@update it
+            val next = (it.searchMatchIndex + 1) % it.searchMatchCount
+            it.copy(searchMatchIndex = next, goToLine = lineOfMatch(it.content, it.searchQuery, next))
+        }
+    }
+
+    fun findPreviousMatch() {
+        _uiState.update {
+            if (it.searchMatchCount <= 0) return@update it
+            val prev = (it.searchMatchIndex - 1 + it.searchMatchCount) % it.searchMatchCount
+            it.copy(searchMatchIndex = prev, goToLine = lineOfMatch(it.content, it.searchQuery, prev))
+        }
+    }
+
+    fun replaceFirst(replacement: String) {
+        val s = _uiState.value
+        val q = s.searchQuery
+        if (q.isEmpty()) return
+        val idx = s.content.indexOf(q, ignoreCase = true)
+        if (idx < 0) return
+        val newContent = s.content.substring(0, idx) + replacement + s.content.substring(idx + q.length)
+        updateContent(newContent)
+        setSearchQuery(q)
+    }
+
+    fun replaceAll(replacement: String) {
+        val s = _uiState.value
+        val q = s.searchQuery
+        if (q.isEmpty()) return
+        val regex = Regex(Regex.escape(q), RegexOption.IGNORE_CASE)
+        updateContent(regex.replace(s.content, replacement))
+        setSearchQuery(q)
+    }
+
+    private fun countMatches(content: String, query: String): Int {
+        if (query.isEmpty()) return 0
+        var count = 0
+        var start = 0
+        val q = query.lowercase()
+        val c = content.lowercase()
+        while (true) {
+            val i = c.indexOf(q, start)
+            if (i < 0) break
+            count++
+            start = i + q.length.coerceAtLeast(1)
+        }
+        return count
+    }
+
+    private fun lineOfMatch(content: String, query: String, matchIndex: Int): Int {
+        if (query.isEmpty() || matchIndex < 0) return 1
+        var count = 0
+        var start = 0
+        val q = query.lowercase()
+        val c = content.lowercase()
+        while (true) {
+            val i = c.indexOf(q, start)
+            if (i < 0) return 1
+            if (count == matchIndex) {
+                return content.substring(0, i).count { it == '\n' } + 1
+            }
+            count++
+            start = i + q.length.coerceAtLeast(1)
+        }
     }
 
     fun clearStatus() {

@@ -102,12 +102,17 @@ fun EditorScreen(
     onClearStatus: () -> Unit,
     onGoToLine: (Int) -> Unit,
     onGoToLineConsumed: () -> Unit,
+    onFindNext: () -> Unit,
+    onFindPrevious: () -> Unit,
+    onReplaceFirst: (String) -> Unit,
+    onReplaceAll: (String) -> Unit,
 ) {
     val isDark = isSystemInDarkTheme()
     val snackbarHostState = remember { SnackbarHostState() }
     var menuExpanded by remember { mutableStateOf(false) }
     var showGoToLine by remember { mutableStateOf(false) }
     var goToLineText by remember { mutableStateOf("") }
+    var replaceText by remember { mutableStateOf("") }
     val context = LocalContext.current
 
     LaunchedEffect(state.statusMessage) {
@@ -224,6 +229,14 @@ fun EditorScreen(
                                 }
                             )
                             DropdownMenuItem(
+                                text = { Text("Copy all") },
+                                onClick = {
+                                    menuExpanded = false
+                                    val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                    cm.setPrimaryClip(android.content.ClipData.newPlainText("CodeCanvas", state.content))
+                                }
+                            )
+                            DropdownMenuItem(
                                 text = { Text("Share") },
                                 onClick = {
                                     menuExpanded = false
@@ -262,29 +275,78 @@ fun EditorScreen(
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    OutlinedTextField(
-                        value = state.searchQuery,
-                        onValueChange = onSearchQuery,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
-                            .semantics { contentDescription = "Search in file" },
-                        placeholder = { Text("Find in file…") },
-                        singleLine = true,
-                        trailingIcon = {
-                            IconButton(
-                                onClick = { onSearchVisible(false) },
-                                modifier = Modifier.size(48.dp)
-                            ) {
-                                Icon(Icons.Default.Close, contentDescription = "Close search")
+                    Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                        OutlinedTextField(
+                            value = state.searchQuery,
+                            onValueChange = onSearchQuery,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .semantics { contentDescription = "Search in file" },
+                            placeholder = { Text("Find in file…") },
+                            singleLine = true,
+                            trailingIcon = {
+                                IconButton(
+                                    onClick = { onSearchVisible(false) },
+                                    modifier = Modifier.size(48.dp)
+                                ) {
+                                    Icon(Icons.Default.Close, contentDescription = "Close search")
+                                }
+                            },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                            ),
+                            shape = MaterialTheme.shapes.medium
+                        )
+                        OutlinedTextField(
+                            value = replaceText,
+                            onValueChange = { replaceText = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 6.dp)
+                                .semantics { contentDescription = "Replace with" },
+                            placeholder = { Text("Replace with…") },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                            ),
+                            shape = MaterialTheme.shapes.medium
+                        )
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = when {
+                                    state.searchQuery.isEmpty() -> "Type to search"
+                                    state.searchMatchCount == 0 -> "No matches"
+                                    else -> "${state.searchMatchIndex + 1} / ${state.searchMatchCount}"
+                                },
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Row {
+                                TextButton(onClick = onFindPrevious, enabled = state.searchMatchCount > 0) {
+                                    Text("Prev")
+                                }
+                                TextButton(onClick = onFindNext, enabled = state.searchMatchCount > 0) {
+                                    Text("Next")
+                                }
+                                TextButton(
+                                    onClick = { onReplaceFirst(replaceText) },
+                                    enabled = state.searchMatchCount > 0
+                                ) { Text("Replace") }
+                                TextButton(
+                                    onClick = { onReplaceAll(replaceText) },
+                                    enabled = state.searchMatchCount > 0
+                                ) { Text("All") }
                             }
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
-                        ),
-                        shape = MaterialTheme.shapes.medium
-                    )
+                        }
+                    }
                 }
             }
 

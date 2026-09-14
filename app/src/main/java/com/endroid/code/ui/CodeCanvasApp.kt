@@ -130,6 +130,10 @@ fun CodeCanvasApp(
                     onClearStatus = viewModel::clearStatus,
                     onGoToLine = viewModel::requestGoToLine,
                     onGoToLineConsumed = viewModel::clearGoToLine,
+                    onFindNext = viewModel::findNextMatch,
+                    onFindPrevious = viewModel::findPreviousMatch,
+                    onReplaceFirst = viewModel::replaceFirst,
+                    onReplaceAll = viewModel::replaceAll,
                 )
             }
             Screen.Settings -> {
