@@ -93,6 +93,7 @@ fun EditorScreen(
     onNewFile: () -> Unit,
     onOpenFile: () -> Unit,
     onOpenRecent: (String) -> Unit,
+    onReload: () -> Unit,
     onSave: () -> Unit,
     onSaveAs: () -> Unit,
     onUndo: () -> Unit,
@@ -211,6 +212,12 @@ fun EditorScreen(
                                 text = { Text("Save As") },
                                 onClick = { menuExpanded = false; onSaveAs() }
                             )
+                            if (state.fileUri != null) {
+                                DropdownMenuItem(
+                                    text = { Text("Reload") },
+                                    onClick = { menuExpanded = false; onReload() }
+                                )
+                            }
                             DropdownMenuItem(
                                 text = { Text("Undo") },
                                 enabled = state.canUndo,

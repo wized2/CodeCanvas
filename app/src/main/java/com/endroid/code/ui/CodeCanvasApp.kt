@@ -110,6 +110,7 @@ fun CodeCanvasApp(
                     onContentChange = viewModel::updateContent,
                     onNewFile = viewModel::newFile,
                     onOpenFile = onOpenFile,
+                    onReload = { viewModel.reloadFile(context.contentResolver) },
                     onOpenRecent = { uriStr ->
                         runCatching {
                             val uri = android.net.Uri.parse(uriStr)
@@ -140,6 +141,7 @@ fun CodeCanvasApp(
                     onReplaceFirst = viewModel::replaceFirst,
                     onReplaceAll = viewModel::replaceAll,
                     onCaseSensitiveSearchChange = viewModel::setCaseSensitiveSearch,
+                    onClearRecent = viewModel::clearRecentFiles,
                 )
             }
             Screen.Settings -> {
@@ -155,6 +157,7 @@ fun CodeCanvasApp(
                     onShowEditorStatsChange = viewModel::setShowEditorStats,
                     onFocusEmptyEditorChange = viewModel::setFocusEmptyEditor,
                     onCaseSensitiveSearchChange = viewModel::setCaseSensitiveSearch,
+                    onClearRecent = viewModel::clearRecentFiles,
                     modifier = Modifier
                         .fillMaxSize()
                         .semantics { contentDescription = "Settings" }

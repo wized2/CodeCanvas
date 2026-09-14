@@ -233,6 +233,11 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
         _uiState.update { it.copy(recentFiles = emptyList()) }
     }
 
+    fun reloadFile(contentResolver: ContentResolver) {
+        val uri = _uiState.value.fileUri ?: return
+        openFile(uri, contentResolver)
+    }
+
     fun needsSaveAs(): Boolean = _uiState.value.fileUri == null
 
     fun save(contentResolver: ContentResolver) {

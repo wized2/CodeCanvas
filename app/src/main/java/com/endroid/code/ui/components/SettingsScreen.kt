@@ -70,6 +70,7 @@ fun SettingsScreen(
     onShowEditorStatsChange: (Boolean) -> Unit,
     onFocusEmptyEditorChange: (Boolean) -> Unit,
     onCaseSensitiveSearchChange: (Boolean) -> Unit,
+    onClearRecent: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -154,6 +155,20 @@ fun SettingsScreen(
                     onCheckedChange = onFocusEmptyEditorChange,
                     description = "Open the keyboard automatically on a blank file"
                 )
+            }
+
+            SettingsSection(title = "Files") {
+                Text(
+                    text = "Recently opened documents (up to 5) appear in the editor menu.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                TextButton(
+                    onClick = onClearRecent,
+                    modifier = Modifier.semantics { contentDescription = "Clear recent files" }
+                ) {
+                    Text("Clear recent files")
+                }
             }
 
             AboutSection()
