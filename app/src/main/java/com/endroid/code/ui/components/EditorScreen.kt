@@ -92,6 +92,7 @@ fun EditorScreen(
     onContentChange: (String) -> Unit,
     onNewFile: () -> Unit,
     onOpenFile: () -> Unit,
+    onOpenRecent: (String) -> Unit,
     onSave: () -> Unit,
     onSaveAs: () -> Unit,
     onUndo: () -> Unit,

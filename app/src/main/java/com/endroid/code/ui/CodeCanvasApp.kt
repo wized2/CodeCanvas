@@ -110,6 +110,12 @@ fun CodeCanvasApp(
                     onContentChange = viewModel::updateContent,
                     onNewFile = viewModel::newFile,
                     onOpenFile = onOpenFile,
+                    onOpenRecent = { uriStr ->
+                        runCatching {
+                            val uri = android.net.Uri.parse(uriStr)
+                            viewModel.openFile(uri, context.contentResolver)
+                        }
+                    },
                     onSave = {
                         if (viewModel.needsSaveAs()) {
                             onSaveAs()

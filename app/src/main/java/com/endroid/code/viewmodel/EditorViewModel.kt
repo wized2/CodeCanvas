@@ -7,6 +7,7 @@ import android.provider.OpenableColumns
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.endroid.code.ThemeMode
+import com.endroid.code.data.RecentFilesPrefs
 import com.endroid.code.data.SettingsPrefs
 import com.endroid.code.editor.Language
 import kotlinx.coroutines.Dispatchers
@@ -45,12 +46,14 @@ data class EditorUiState(
     val isLoading: Boolean = false,
     val currentScreen: Screen = Screen.Editor,
     val lineCount: Int = 1,
-    val charCount: Int = 0
+    val charCount: Int = 0,
+    val recentFiles: List<Pair<String, String>> = emptyList()
 )
 
 class EditorViewModel(application: Application) : AndroidViewModel(application) {
 
     private val prefs = SettingsPrefs(application)
+    private val recentPrefs = RecentFilesPrefs(application)
 
     private val _uiState = MutableStateFlow(
         EditorUiState(
@@ -62,6 +65,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
             focusEmptyEditor = prefs.focusEmptyEditor,
             caseSensitiveSearch = prefs.caseSensitiveSearch,
             themeMode = prefs.themeMode,
+            recentFiles = recentPrefs.list(),
         )
     )
     val uiState: StateFlow<EditorUiState> = _uiState.asStateFlow()
@@ -199,6 +203,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 undoStack.clear()
                 redoStack.clear()
                 val lines = content.count { it == '\n' } + 1
+                recentPrefs.add(uri, name)
                 _uiState.update {
                     it.copy(
                         content = content,
@@ -211,7 +216,8 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                         canRedo = false,
                         statusMessage = "Opened $name",
                         lineCount = lines,
-                        charCount = content.length
+                        charCount = content.length,
+                        recentFiles = recentPrefs.list()
                     )
                 }
             } catch (e: Exception) {
@@ -220,6 +226,11 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 }
             }
         }
+    }
+
+    fun clearRecentFiles() {
+        recentPrefs.clear()
+        _uiState.update { it.copy(recentFiles = emptyList()) }
     }
 
     fun needsSaveAs(): Boolean = _uiState.value.fileUri == null
