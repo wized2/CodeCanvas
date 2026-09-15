@@ -111,6 +111,7 @@ fun EditorScreen(
     onCaseSensitiveSearchChange: (Boolean) -> Unit,
 ) {
     val isDark = isSystemInDarkTheme()
+    val clipboard = LocalClipboardManager.current
     val snackbarHostState = remember { SnackbarHostState() }
     var menuExpanded by remember { mutableStateOf(false) }
     var showGoToLine by remember { mutableStateOf(false) }
@@ -287,7 +288,14 @@ fun EditorScreen(
                                 }
                             }
                             HorizontalDivider()
-                            DropdownMenuItem(
+                                                        DropdownMenuItem(
+                                text = { Text("Copy all") },
+                                onClick = {
+                                    menuExpanded = false
+                                    clipboard.setText(AnnotatedString(state.content))
+                                }
+                            )
+DropdownMenuItem(
                                 text = { Text("Settings") },
                                 onClick = { menuExpanded = false; onOpenSettings() },
                                 leadingIcon = {
@@ -481,7 +489,10 @@ fun EditorScreen(
                     Text(
                         text = buildString {
                             if (state.showEditorStats) {
-                                append("${state.lineCount} lines  ·  ${state.charCount} chars")
+                                run {
+                                    val words = state.content.split(Regex("\\s+")).count { it.isNotBlank() }
+                                    append("${state.lineCount} lines  ·  ${state.charCount} chars  ·  $words words")
+                                }
                             } else {
                                 append(state.language.displayName)
                             }

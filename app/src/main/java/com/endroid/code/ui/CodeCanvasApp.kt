@@ -154,6 +154,7 @@ fun CodeCanvasApp(
                     onWordWrapChange = viewModel::setWordWrap,
                     onKeepScreenOnChange = viewModel::setKeepScreenOn,
                     onShowEditorStatsChange = viewModel::setShowEditorStats,
+                    onTabSize = viewModel::setTabSize,
                     onFocusEmptyEditorChange = viewModel::setFocusEmptyEditor,
                     onCaseSensitiveSearchChange = viewModel::setCaseSensitiveSearch,
                     onClearRecent = viewModel::clearRecentFiles,
