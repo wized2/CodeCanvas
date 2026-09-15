@@ -100,8 +100,8 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v2.5.1
-          name: CodeCanvas v2.5.1
+          tag_name: v2.5.2
+          name: CodeCanvas v2.5.2
           files: |
             release-assets/CodeCanvas-release.apk
             release-assets/CodeCanvas-debug.apk
