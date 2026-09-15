@@ -32,8 +32,8 @@ class SettingsPrefs(context: Context) {
         set(value) = prefs.edit().putBoolean(KEY_KEEP_SCREEN_ON, value).apply()
 
     var tabSize: Int
-        get() = p.getInt("tab_size", 4).coerceIn(2, 8)
-        set(v) = p.edit().putInt("tab_size", v.coerceIn(2, 8)).apply()
+        get() = prefs.getInt("tab_size", 4).coerceIn(2, 8)
+        set(v) = prefs.edit().putInt("tab_size", v.coerceIn(2, 8)).apply()
 
     var showEditorStats: Boolean
         get() = prefs.getBoolean(KEY_SHOW_STATS, true)
