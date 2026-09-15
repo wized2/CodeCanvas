@@ -262,7 +262,7 @@ fun EditorScreen(
                                 DropdownMenuItem(
                                     text = {
                                         Text(
-                                            "Recent files",
+                                            "Recent files (${state.recentFiles.size})",
                                             style = MaterialTheme.typography.labelMedium,
                                             color = MaterialTheme.colorScheme.primary
                                         )
