@@ -19,7 +19,7 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-        resourceConfigurations += listOf("en", "xxhdpi")
+        resourceConfigurations += listOf("en")
     }
 
 
