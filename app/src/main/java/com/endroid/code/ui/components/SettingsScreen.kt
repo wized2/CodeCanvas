@@ -39,6 +39,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -69,6 +70,7 @@ fun SettingsScreen(
     onWordWrapChange: (Boolean) -> Unit,
     onKeepScreenOnChange: (Boolean) -> Unit,
     onShowEditorStatsChange: (Boolean) -> Unit,
+    onTabSize: (Int) -> Unit,
     onFocusEmptyEditorChange: (Boolean) -> Unit,
     onCaseSensitiveSearchChange: (Boolean) -> Unit,
     onClearRecent: () -> Unit,
@@ -131,6 +133,22 @@ fun SettingsScreen(
                 ThemeDropdown(current = state.themeMode, onSelected = onThemeModeChange)
                 Spacer(Modifier.height(8.dp))
                 FontSizeSlider(value = state.fontSize, onValueChange = onFontSizeChange)
+
+                Text(
+                    "Tab size",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(2, 4, 8).forEach { n ->
+                        FilterChip(
+                            selected = state.tabSize == n,
+                            onClick = { onTabSize(n) },
+                            label = { Text("$n spaces") }
+                        )
+                    }
+                }
             }
 
             SettingsSection(title = "Editor") {

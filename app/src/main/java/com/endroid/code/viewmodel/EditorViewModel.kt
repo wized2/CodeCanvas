@@ -32,6 +32,7 @@ data class EditorUiState(
     val wordWrap: Boolean = false,
     val keepScreenOn: Boolean = false,
     val showEditorStats: Boolean = true,
+    val tabSize: Int = 4,
     val focusEmptyEditor: Boolean = true,
     val caseSensitiveSearch: Boolean = false,
     val goToLine: Int? = null,
@@ -62,6 +63,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
             wordWrap = prefs.wordWrap,
             keepScreenOn = prefs.keepScreenOn,
             showEditorStats = prefs.showEditorStats,
+            tabSize = prefs.tabSize,
             focusEmptyEditor = prefs.focusEmptyEditor,
             caseSensitiveSearch = prefs.caseSensitiveSearch,
             themeMode = prefs.themeMode,
@@ -314,6 +316,11 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     fun setKeepScreenOn(enabled: Boolean) {
         prefs.keepScreenOn = enabled
         _uiState.update { it.copy(keepScreenOn = enabled) }
+    }
+
+    fun setTabSize(size: Int) {
+        prefs.tabSize = size
+        _uiState.update { it.copy(tabSize = prefs.tabSize) }
     }
 
     fun setShowEditorStats(show: Boolean) {
