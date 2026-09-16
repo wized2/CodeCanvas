@@ -493,7 +493,7 @@ DropdownMenuItem(
                             if (state.showEditorStats) {
                                 run {
                                     val words = state.content.split(Regex("\\s+")).count { it.isNotBlank() }
-                                    append("${state.lineCount} lines  ·  ${state.charCount} chars  ·  $words words")
+                                    append("${state.lineCount} lines  ·  ${state.charCount} chars  ·  $words words  ·  UTF-8")
                                 }
                             } else {
                                 append(state.language.displayName)
