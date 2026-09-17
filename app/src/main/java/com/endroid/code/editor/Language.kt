@@ -15,7 +15,9 @@ enum class Language(val displayName: String, val extensions: List<String>) {
     SHELL("Shell", listOf("sh", "bash", "zsh")),
     C("C/C++", listOf("c", "cpp", "h", "hpp", "cc")),
     RUST("Rust", listOf("rs")),
-    GO("Go", listOf("go"));
+    GO("Go", listOf("go")),
+    YAML("YAML", listOf("yml", "yaml")),
+    TOML("TOML", listOf("toml"));
 
     companion object {
         fun fromFileName(name: String): Language {
