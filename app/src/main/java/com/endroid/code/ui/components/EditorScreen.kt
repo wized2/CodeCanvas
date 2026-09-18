@@ -493,7 +493,7 @@ DropdownMenuItem(
                             if (state.showEditorStats) {
                                 run {
                                     val words = state.content.split(Regex("\\s+")).count { it.isNotBlank() }
-                                    append("${state.lineCount} lines  ·  ${state.charCount} chars  ·  $words words  ·  tab ${state.tabSize}  ·  UTF-8")
+                                    append("${state.language.displayName}  ·  ${state.lineCount} lines  ·  ${state.charCount} chars  ·  $words words  ·  Tab ${state.tabSize}  ·  UTF-8")
                                 }
                             } else {
                                 append(state.language.displayName)
@@ -601,6 +601,19 @@ private fun EditorBody(
     LaunchedEffect(tfState.text) {
         val t = tfState.text.toString()
         if (t != state.content) onContentChange(t)
+    }
+
+
+    val cursorPos by remember {
+        derivedStateOf {
+            val text = tfState.text.toString()
+            val off = tfState.selection.min.coerceIn(0, text.length)
+            val before = text.substring(0, off)
+            val line = before.count { it == '\n' } + 1
+            val lastNl = before.lastIndexOf('\n')
+            val col = off - (lastNl + 1) + 1
+            line to col.coerceAtLeast(1)
+        }
     }
 
     LaunchedEffect(state.goToLine) {
