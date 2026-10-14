@@ -1,27 +1,40 @@
 package com.endroid.code.ui.components
 
+import android.content.Intent
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
@@ -31,64 +44,63 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import android.content.Intent
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.endroid.code.R
+import com.endroid.code.editor.Language
 import com.endroid.code.editor.SyntaxHighlighter
 import com.endroid.code.viewmodel.EditorUiState
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -115,14 +127,13 @@ fun EditorScreen(
     onReplaceAll: (String) -> Unit,
     onCaseSensitiveSearchChange: (Boolean) -> Unit,
 ) {
-    val isDark = isSystemInDarkTheme()
-    val clipboard = LocalClipboardManager.current
     val snackbarHostState = remember { SnackbarHostState() }
     var menuExpanded by remember { mutableStateOf(false) }
     var showGoToLine by remember { mutableStateOf(false) }
     var goToLineText by remember { mutableStateOf("") }
     var replaceText by remember { mutableStateOf("") }
     val context = LocalContext.current
+    val scheme = MaterialTheme.colorScheme
 
     LaunchedEffect(state.statusMessage) {
         val msg = state.statusMessage
@@ -131,7 +142,6 @@ fun EditorScreen(
             onClearStatus()
         }
     }
-
 
     if (showGoToLine) {
         AlertDialog(
@@ -147,12 +157,10 @@ fun EditorScreen(
                 )
             },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        goToLineText.toIntOrNull()?.let { onGoToLine(it) }
-                        showGoToLine = false
-                    }
-                ) { Text("Go") }
+                TextButton(onClick = {
+                    goToLineText.toIntOrNull()?.let { onGoToLine(it) }
+                    showGoToLine = false
+                }) { Text("Go") }
             },
             dismissButton = {
                 TextButton(onClick = { showGoToLine = false }) { Text("Cancel") }
@@ -165,360 +173,296 @@ fun EditorScreen(
             .fillMaxSize()
             .statusBarsPadding()
             .imePadding(),
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = scheme.surface,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = state.fileName.ifBlank { "Untitled" },
-                            style = MaterialTheme.typography.titleMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        if (state.isModified) {
+            Column {
+                TopAppBar(
+                    title = {
+                        Column(Modifier.padding(end = 4.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = state.fileName.ifBlank { "Untitled" },
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f, fill = false)
+                                )
+                                if (state.isModified) {
+                                    Box(
+                                        Modifier
+                                            .padding(start = 8.dp)
+                                            .size(7.dp)
+                                            .clip(CircleShape)
+                                            .background(scheme.tertiary)
+                                    )
+                                }
+                            }
                             Text(
-                                text = "Modified",
+                                text = state.language.displayName,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.tertiary
+                                color = scheme.onSurfaceVariant
                             )
                         }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                ),
-                actions = {
-                    ToolbarIcon(Icons.Default.Add, "New file", onNewFile)
-                    ToolbarIcon(
-                        painter = painterResource(R.drawable.ic_folder_open),
-                        desc = "Open file",
-                        onClick = onOpenFile
-                    )
-                    ToolbarIcon(
-                        painter = painterResource(R.drawable.ic_save),
-                        desc = "Save",
-                        onClick = onSave
-                    )
-                    ToolbarIcon(Icons.Default.Search, "Search") {
-                        onSearchVisible(!state.searchVisible)
-                    }
-                    Box {
-                        ToolbarIcon(Icons.Default.MoreVert, "More options") {
-                            menuExpanded = true
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = scheme.surfaceContainer,
+                        titleContentColor = scheme.onSurface,
+                        actionIconContentColor = scheme.onSurfaceVariant
+                    ),
+                    actions = {
+                        ToolbarIcon(painter = painterResource(R.drawable.ic_save), desc = "Save", onClick = onSave)
+                        ToolbarIcon(Icons.Default.Search, "Find") {
+                            onSearchVisible(!state.searchVisible)
                         }
-                        DropdownMenu(
-                            expanded = menuExpanded,
-                            onDismissRequest = { menuExpanded = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Save As") },
-                                onClick = { menuExpanded = false; onSaveAs() }
-                            )
-                            if (state.fileUri != null) {
+                        Box {
+                            ToolbarIcon(Icons.Default.MoreVert, "Menu") { menuExpanded = true }
+                            DropdownMenu(
+                                expanded = menuExpanded,
+                                onDismissRequest = { menuExpanded = false },
+                                modifier = Modifier.widthIn(min = 220.dp)
+                            ) {
+                                MenuSectionLabel("File")
                                 DropdownMenuItem(
-                                    text = { Text("Reload") },
+                                    text = { Text("New") },
+                                    onClick = { menuExpanded = false; onNewFile() }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Open") },
+                                    onClick = { menuExpanded = false; onOpenFile() }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Save As") },
+                                    onClick = { menuExpanded = false; onSaveAs() }
+                                )
+                                if (state.fileUri != null) {
+                                    DropdownMenuItem(
+                                    text = { Text("Reload from disk") },
                                     onClick = { menuExpanded = false; onReload() }
+                                    )
+                                }
+                                HorizontalDivider(Modifier.padding(vertical = 4.dp))
+                                MenuSectionLabel("Edit")
+                                DropdownMenuItem(
+                                    text = { Text("Undo") },
+                                    enabled = state.canUndo,
+                                    onClick = { menuExpanded = false; onUndo() }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Redo") },
+                                    enabled = state.canRedo,
+                                    onClick = { menuExpanded = false; onRedo() }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Go to line") },
+                                    onClick = {
+                                        menuExpanded = false
+                                        goToLineText = ""
+                                        showGoToLine = true
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Copy all") },
+                                    onClick = {
+                                        menuExpanded = false
+                                        val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                        cm.setPrimaryClip(android.content.ClipData.newPlainText("CodeCanvas", state.content))
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Share") },
+                                    onClick = {
+                                        menuExpanded = false
+                                        val send = Intent(Intent.ACTION_SEND).apply {
+                                            type = "text/plain"
+                                            putExtra(Intent.EXTRA_TEXT, state.content)
+                                            putExtra(Intent.EXTRA_SUBJECT, state.fileName.ifBlank { "CodeCanvas" })
+                                        }
+                                        context.startActivity(Intent.createChooser(send, "Share code"))
+                                    }
+                                )
+                                HorizontalDivider(Modifier.padding(vertical = 4.dp))
+                                DropdownMenuItem(
+                                    text = { Text("Settings") },
+                                    onClick = { menuExpanded = false; onOpenSettings() }
                                 )
                             }
-                            DropdownMenuItem(
-                                text = { Text("Undo") },
-                                enabled = state.canUndo,
-                                onClick = { menuExpanded = false; onUndo() }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Redo") },
-                                enabled = state.canRedo,
-                                onClick = { menuExpanded = false; onRedo() }
-                            )
-                            HorizontalDivider()
-                            DropdownMenuItem(
-                                text = { Text("Go to line") },
-                                onClick = {
-                                    menuExpanded = false
-                                    goToLineText = ""
-                                    showGoToLine = true
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Copy all") },
-                                onClick = {
-                                    menuExpanded = false
-                                    val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                    cm.setPrimaryClip(android.content.ClipData.newPlainText("CodeCanvas", state.content))
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Share") },
-                                onClick = {
-                                    menuExpanded = false
-                                    val send = Intent(Intent.ACTION_SEND).apply {
-                                        type = "text/plain"
-                                        putExtra(Intent.EXTRA_TEXT, state.content)
-                                        putExtra(Intent.EXTRA_SUBJECT, state.fileName.ifBlank { "CodeCanvas" })
+                        }
+                    }
+                )
+
+                // Find / replace strip
+                AnimatedVisibility(
+                    visible = state.searchVisible,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Surface(
+                        color = scheme.surfaceContainerHigh,
+                        tonalElevation = 1.dp
+                    ) {
+                        Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = state.searchQuery,
+                                    onValueChange = onSearchQuery,
+                                    placeholder = { Text("Find") },
+                                    singleLine = true,
+                                    modifier = Modifier.weight(1f),
+                                    trailingIcon = {
+                                        if (state.searchQuery.isNotEmpty()) {
+                                            IconButton(onClick = { onSearchQuery("") }) {
+                                                Icon(Icons.Default.Close, "Clear")
+                                            }
+                                        }
                                     }
-                                    context.startActivity(Intent.createChooser(send, "Share code"))
-                                }
-                            )
-                            if (state.recentFiles.isNotEmpty()) {
-                                HorizontalDivider()
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            "Recent files (${state.recentFiles.size})",
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                    },
-                                    onClick = {},
-                                    enabled = false
                                 )
-                                state.recentFiles.forEach { (uri, name) ->
-                                    DropdownMenuItem(
-                                        text = {
+                                TextButton(onClick = onFindPrevious) { Text("Prev") }
+                                TextButton(onClick = onFindNext) { Text("Next") }
+                            }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                modifier = Modifier.padding(top = 6.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = replaceText,
+                                    onValueChange = { replaceText = it },
+                                    placeholder = { Text("Replace") },
+                                    singleLine = true,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                TextButton(onClick = { onReplaceFirst(replaceText) }) { Text("One") }
+                                TextButton(onClick = { onReplaceAll(replaceText) }) { Text("All") }
+                            }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(top = 4.dp)
+                            ) {
+                                FilterChip(
+                                    selected = state.caseSensitiveSearch,
+                                    onClick = { onCaseSensitiveSearchChange(!state.caseSensitiveSearch) },
+                                    label = { Text("Match case") }
+                                )
+                                Spacer(Modifier.weight(1f))
+                                TextButton(onClick = { onSearchVisible(false) }) { Text("Close") }
+                            }
+                        }
+                    }
+                }
+
+                // Recent files strip when welcome
+                if (state.content.isEmpty() && state.recentFiles.isNotEmpty()) {
+                    Surface(color = scheme.surfaceContainerLowest) {
+                        Column(Modifier.padding(vertical = 8.dp)) {
+                            Text(
+                                "Recent",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = scheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
+                            )
+                            Row(
+                                Modifier
+                                    .horizontalScroll(rememberScrollState())
+                                    .padding(horizontal = 12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                state.recentFiles.take(12).forEach { (uri, name) ->
+                                    FilterChip(
+                                        selected = false,
+                                        onClick = { onOpenRecent(uri) },
+                                        label = {
                                             Text(
                                                 name,
                                                 maxLines = 1,
-                                                softWrap = false
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.widthIn(max = 140.dp)
                                             )
                                         },
-                                        onClick = {
-                                            menuExpanded = false
-                                            onOpenRecent(uri)
+                                        leadingIcon = {
+                                            Icon(painterResource(R.drawable.ic_folder_open), null, Modifier.size(16.dp))
                                         }
                                     )
                                 }
                             }
-                            HorizontalDivider()
-                                                        DropdownMenuItem(
-                                text = { Text("Copy all") },
-                                onClick = {
-                                    menuExpanded = false
-                                    clipboard.setText(AnnotatedString(state.content))
-                                }
-                            )
-DropdownMenuItem(
-                                text = { Text("Settings") },
-                                onClick = { menuExpanded = false; onOpenSettings() },
-                                leadingIcon = {
-                                    Icon(Icons.Default.Settings, contentDescription = null)
-                                }
-                            )
-                        }
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            if (state.recentFiles.isNotEmpty() && !state.searchVisible) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        "Recent",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                    state.recentFiles.forEach { (uri, name) ->
-                        TextButton(
-                            onClick = { onOpenRecent(uri) },
-                            modifier = Modifier.defaultMinSize(minHeight = 36.dp)
-                        ) {
-                            Text(name, maxLines = 1, softWrap = false)
                         }
                     }
                 }
             }
-            AnimatedVisibility(
-                visible = state.searchVisible,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                Surface(
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                        OutlinedTextField(
-                            value = state.searchQuery,
-                            onValueChange = onSearchQuery,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .semantics { contentDescription = "Search in file" },
-                            placeholder = { Text("Find in file…") },
-                            singleLine = true,
-                            trailingIcon = {
-                                IconButton(
-                                    onClick = { onSearchVisible(false) },
-                                    modifier = Modifier.size(48.dp)
-                                ) {
-                                    Icon(Icons.Default.Close, contentDescription = "Close search")
-                                }
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
-                            ),
-                            shape = MaterialTheme.shapes.medium
-                        )
-                        OutlinedTextField(
-                            value = replaceText,
-                            onValueChange = { replaceText = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 6.dp)
-                                .semantics { contentDescription = "Replace with" },
-                            placeholder = { Text("Replace with…") },
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
-                            ),
-                            shape = MaterialTheme.shapes.medium
-                        )
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(top = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = when {
-                                    state.searchQuery.isEmpty() -> "Type to search"
-                                    state.searchMatchCount == 0 -> "No matches"
-                                    else -> "${state.searchMatchIndex + 1} / ${state.searchMatchCount}"
-                                },
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Row {
-                                TextButton(
-                                    onClick = { onCaseSensitiveSearchChange(!state.caseSensitiveSearch) }
-                                ) {
-                                    Text(if (state.caseSensitiveSearch) "Aa" else "aa")
-                                }
-                                TextButton(onClick = onFindPrevious, enabled = state.searchMatchCount > 0) {
-                                    Text("Prev")
-                                }
-                                TextButton(onClick = onFindNext, enabled = state.searchMatchCount > 0) {
-                                    Text("Next")
-                                }
-                                TextButton(
-                                    onClick = { onReplaceFirst(replaceText) },
-                                    enabled = state.searchMatchCount > 0
-                                ) { Text("Replace") }
-                                TextButton(
-                                    onClick = { onReplaceAll(replaceText) },
-                                    enabled = state.searchMatchCount > 0
-                                ) { Text("All") }
-                            }
-                        }
-                    }
-                }
-            }
-
-            Box(
-                Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface)
-            ) {
-                EditorBody(
-                    state = state,
-                    isDark = isDark,
-                    onContentChange = onContentChange,
-                    onGoToLineConsumed = onGoToLineConsumed
-                )
-
-                if (state.isLoading) {
-                    Box(
-                        Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.45f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Surface(
-                            shape = MaterialTheme.shapes.extraLarge,
-                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            tonalElevation = 6.dp,
-                            modifier = Modifier.padding(24.dp)
-                        ) {
-                            Column(
-                                Modifier.padding(horizontal = 28.dp, vertical = 24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                CircularProgressIndicator(
-                                    color = MaterialTheme.colorScheme.primary,
-                                    strokeWidth = 3.dp,
-                                    modifier = Modifier.size(40.dp)
-                                )
-                                Text(
-                                    text = state.statusMessage ?: "Loading…",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
+        },
+        bottomBar = {
             Surface(
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(36.dp)
+                color = scheme.surfaceContainer,
+                tonalElevation = 2.dp,
+                modifier = Modifier.navigationBarsPadding()
             ) {
                 Row(
                     Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 14.dp),
+                        .fillMaxWidth()
+                        .height(32.dp)
+                        .padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(
-                        text = buildString {
-                            if (state.showEditorStats) {
-                                run {
-                                    val words = state.content.split(Regex("\\s+")).count { it.isNotBlank() }
-                                    append("${state.language.displayName}  ·  ${state.lineCount} lines  ·  ${state.charCount} chars  ·  $words words  ·  Tab ${state.tabSize}  ·  UTF-8")
-                                }
-                            } else {
-                                append(state.language.displayName)
-                            }
-                            if (state.keepScreenOn) append("  ·  Screen on")
-                            if (state.isModified) append("  ·  Modified")
-                        },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = state.language.displayName,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    StatusBit("Ln ${state.lineCount}")
+                    StatusBit(state.language.displayName)
+                    StatusBit("UTF-8")
+                    if (state.isModified) StatusBit("Modified", emphasize = true)
+                    Spacer(Modifier.weight(1f))
+                    if (state.isLoading) {
+                        CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp)
+                    }
                 }
             }
+        }
+    ) { padding ->
+        Box(
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .background(scheme.surface)
+        ) {
+            EditorBody(
+                state = state,
+                isDark = isSystemInDarkTheme(),
+                onContentChange = onContentChange,
+                onGoToLineConsumed = onGoToLineConsumed
+            )
         }
     }
 }
 
 @Composable
+private fun MenuSectionLabel(text: String) {
+    DropdownMenuItem(
+        text = {
+            Text(
+                text = text.uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold
+            )
+        },
+        onClick = {},
+        enabled = false
+    )
+}
+
+@Composable
+private fun StatusBit(text: String, emphasize: Boolean = false) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall,
+        color = if (emphasize) MaterialTheme.colorScheme.tertiary
+        else MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1
+    )
+}
+
+
 private fun ToolbarIcon(
     imageVector: ImageVector,
     desc: String,

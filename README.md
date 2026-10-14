@@ -1,5 +1,8 @@
 # CodeCanvas
 
+**v3.1.0** — professional editor chrome: structured File/Edit menu, find/replace strip, recent chips, status bar.
+
+
 **Fast Material 3 code editor for Android** — smooth typing, real files, offline.
 
 [![Build](https://github.com/wized2/CodeCanvas/actions/workflows/build.yml/badge.svg)](https://github.com/wized2/CodeCanvas/actions/workflows/build.yml)
