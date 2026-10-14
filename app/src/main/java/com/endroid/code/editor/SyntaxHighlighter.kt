@@ -13,7 +13,7 @@ import androidx.compose.ui.text.withStyle
  */
 object SyntaxHighlighter {
 
-    private const val MAX_HIGHLIGHT_CHARS = 80_000
+    private const val MAX_HIGHLIGHT_CHARS = 40_000
 
     data class ThemeColors(
         val keyword: Color,

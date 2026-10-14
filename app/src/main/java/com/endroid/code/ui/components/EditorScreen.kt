@@ -60,6 +60,9 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -584,10 +587,18 @@ private fun EditorBody(
         }
     }
 
-    val highlighted by remember(state.content, state.language, isDark) {
-        derivedStateOf {
+    // Debounced highlight: never re-tokenize on every keystroke (main lag fix)
+    var highlighted by remember { mutableStateOf(AnnotatedString(state.content)) }
+    var isTypingHighlight by remember { mutableStateOf(false) }
+    LaunchedEffect(state.content, state.language, isDark) {
+        isTypingHighlight = true
+        // Plain while typing feels instant
+        highlighted = AnnotatedString(state.content)
+        delay(220)
+        highlighted = withContext(Dispatchers.Default) {
             SyntaxHighlighter.highlight(state.content, state.language, isDark)
         }
+        isTypingHighlight = false
     }
 
     val tfState = rememberTextFieldState()
@@ -714,15 +725,23 @@ private fun EditorBody(
                     modifier = Modifier.padding(top = 2.dp)
                 )
             }
-            Text(
-                text = highlighted,
-                style = monoStyle,
-                softWrap = state.wordWrap,
-                modifier = Modifier
-            )
+            // While typing: single visible layer (no dual paint). Idle: highlight underlay.
+            if (!isTypingHighlight) {
+                Text(
+                    text = highlighted,
+                    style = monoStyle,
+                    softWrap = state.wordWrap,
+                    modifier = Modifier
+                )
+            }
             BasicTextField(
                 state = tfState,
-                textStyle = monoStyle.copy(color = androidx.compose.ui.graphics.Color.Transparent),
+                textStyle = monoStyle.copy(
+                    color = if (isTypingHighlight)
+                        MaterialTheme.colorScheme.onSurface
+                    else
+                        androidx.compose.ui.graphics.Color.Transparent
+                ),
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 lineLimits = TextFieldLineLimits.MultiLine(minHeightInLines = 1),
                 modifier = Modifier
